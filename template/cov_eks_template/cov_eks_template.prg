@@ -33,7 +33,6 @@ call SubroutineLog(build2("starting ",trim(curprog)))
 
 set retval = -1
 
-free record t_rec
 record t_rec
 (
 	1 patient
