@@ -34,7 +34,6 @@ call SubroutineLog(build2("starting ",trim(curprog)))
 
 set retval = -1
 
-free record t_rec
 record t_rec
 (
 	1 patient
@@ -60,7 +59,7 @@ record t_rec
 	1 log_message =  vc
 	1 log_misc1 = vc
 	1 return_value = vc
-)
+) with protect
 
 set t_rec->retval							= -1
 set t_rec->return_value						= "FAILED"
