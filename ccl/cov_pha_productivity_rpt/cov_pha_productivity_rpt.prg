@@ -533,12 +533,127 @@ join prx
  	call writeLog(build2("<--Leaving Order Verify Query"))	
   WITH nocounter 
 
+call writeLog(build2("* END   Order Review Query *********************************"))
+call writeLog(build2("************************************************************"))
+
+
+call writeLog(build2("************************************************************"))
+call writeLog(build2("* START Pharmcist Order Review Query ***********************"))
+  
+  
+SELECT distinct INTO "nl:"
+  physician_name = trim (pmd.name_full_formatted ,3 ) ,
+  orderable = trim (o.hna_order_mnemonic ,3 ) ,
+  synonym = trim (o.ordered_as_mnemonic ,3 ) ,
+  order_sentence = substring (1 ,100 ,check(o.clinical_display_line )) ,
+  ordered_date = format(o.orig_order_dt_tm, "mm/dd/yyyy;;d") ,
+  ordered_time =format(o.orig_order_dt_tm, "hh:mm:ss;;d") ,
+  action_dt_tm =format(oa.action_dt_tm,"@MEDIUMDATETIME") ,
+  verified_date = format(orv.review_dt_tm, "mm/dd/yyyy;;d") ,
+  verified_time = format(orv.review_dt_tm, "hh:mm:ss;;d") ,
+  verifying_rph = trim (prx.name_full_formatted ,3 ) ,
+  oa_action_type_disp = uar_get_code_display (oa.action_type_cd ) ,
+  oa_order_status_disp = uar_get_code_display (oa.order_status_cd ) ,
+  ordering_facility = uar_get_code_display(e.loc_facility_cd) ,
+  ordering_location = uar_get_code_display (e.loc_nurse_unit_cd ) ,
+  tat_minutes = datetimediff (orv.review_dt_tm ,o.orig_order_dt_tm ,4 ) ,
+  tat2_minutes = datetimediff (orv.review_dt_tm ,oa.action_dt_tm ,4 ) ,
+  financial_number = trim (ea.alias ,3 ) ,
+  order_id = o.order_id
+from 
+	order_review orv ,
+	orders o,
+	encounter e,
+	encntr_alias ea,
+	order_action oa,
+	prsnl pmd,
+	prsnl prx,
+	prsnl poa
+plan orv
+	where orv.updt_dt_tm between cnvtdatetime(t_rec->dates.bdate) and cnvtdatetime(t_rec->dates.edate)
+	and orv.review_type_flag = 3
+	and not orv.review_personnel_id in (0,1)
+    AND orv.reviewed_status_flag != 4 
+    and parser(t_rec->query.new_provider_var)
+    and orv.review_dt_tm between cnvtdatetime(t_rec->dates.bdate) and cnvtdatetime(t_rec->dates.edate)
+join o
+	where o.order_id = orv.order_id
+	and   o.catalog_type_cd = value(uar_get_code_by("MEANING",6000,"PHARMACY"))
+join e
+	where e.encntr_id = o.encntr_id
+	AND operator(e.loc_facility_cd,t_rec->query.facoper,$vFacility)
+join ea
+	where ea.encntr_id = e.encntr_id
+	and   ea.active_ind = 1
+	and   ea.encntr_alias_type_cd = value(uar_get_code_by("MEANING",319,"FIN NBR"))
+	and   ea.beg_effective_dt_tm <= cnvtdatetime(curdate,curtime3)
+	and   ea.end_effective_dt_tm >= cnvtdatetime(curdate,curtime3)
+join oa
+	where oa.order_id = o.order_id
+	and   oa.action_sequence = orv.action_sequence
+	and   oa.needs_verify_ind in(0)
+join pmd
+	where pmd.person_id = oa.order_provider_id
+join poa
+	where poa.person_id = oa.action_personnel_id
+	and   poa.position_cd in (	 value(uar_get_code_by("DISPLAY",88,"PharmNet - Management"))
+								,value(uar_get_code_by("DISPLAY",88,"PharmNet - Pharmacist"))
+								,value(uar_get_code_by("DISPLAY",88,"DBA"))
+							)
+join prx
+   where orv.review_personnel_id = prx.person_id 
+   and prx.name_last_key != "SYSTEM" 
+   and cnvtlower(prx.name_last_key) != '*test*'
+   and cnvtupper(prx.name_last_key) != 'UA.*'
+ head report
+ 	call writeLog(build2("-->Inside Order Verify Query"))
+ detail
+ 	t_rec->verify_cnt = (t_rec->verify_cnt + 1)
+	;if ((mod(t_rec->verify_cnt,10000) = 1) or (t_rec->verify_cnt = 1))
+	stat = alterlist(t_rec->verify_qual,(t_rec->verify_cnt))
+	;endif	
+	t_rec->verify_qual[t_rec->verify_cnt].physician_name 		= physician_name 
+	t_rec->verify_qual[t_rec->verify_cnt].orderable 			= orderable 
+	t_rec->verify_qual[t_rec->verify_cnt].synonym 				= synonym 
+	t_rec->verify_qual[t_rec->verify_cnt].order_sentence 		= order_sentence 
+	t_rec->verify_qual[t_rec->verify_cnt].ordered_date 			= ordered_date 
+	t_rec->verify_qual[t_rec->verify_cnt].ordered_time			= ordered_time 
+	t_rec->verify_qual[t_rec->verify_cnt].orig_order_dt_tm 		= o.orig_order_dt_tm
+	t_rec->verify_qual[t_rec->verify_cnt].action_dt_tm 			= oa.action_dt_tm
+	t_rec->verify_qual[t_rec->verify_cnt].verified_day_of_week	= weekday(orv.review_dt_tm)
+	t_rec->verify_qual[t_rec->verify_cnt].verified_time_of_day	= cnvttime(orv.review_dt_tm)
+	t_rec->verify_qual[t_rec->verify_cnt].verified_date 		= verified_date 
+	t_rec->verify_qual[t_rec->verify_cnt].verified_time 		= verified_time 
+	t_rec->verify_qual[t_rec->verify_cnt].verified_dt_tm 		= orv.review_dt_tm
+	t_rec->verify_qual[t_rec->verify_cnt].updt_dt_tm 			= orv.updt_dt_tm
+	t_rec->verify_qual[t_rec->verify_cnt].verifying_rph 		= verifying_rph 
+	t_rec->verify_qual[t_rec->verify_cnt].verifying_rph_position = uar_get_code_display(prx.position_cd)
+	t_rec->verify_qual[t_rec->verify_cnt].oa_action_type_disp 	= oa_action_type_disp 
+	t_rec->verify_qual[t_rec->verify_cnt].oa_order_status_disp	= oa_order_status_disp 
+	t_rec->verify_qual[t_rec->verify_cnt].ordering_facility 	= ordering_facility 
+	t_rec->verify_qual[t_rec->verify_cnt].ordering_location 	= ordering_location 
+	t_rec->verify_qual[t_rec->verify_cnt].encntr_type	 		= uar_get_code_display(e.encntr_type_cd)
+	t_rec->verify_qual[t_rec->verify_cnt].encntr_type_class 	= uar_get_code_display(e.encntr_type_class_cd)
+	t_rec->verify_qual[t_rec->verify_cnt].tat_minutes 			= tat_minutes 
+	t_rec->verify_qual[t_rec->verify_cnt].tat2_minutes 			= tat2_minutes 
+	t_rec->verify_qual[t_rec->verify_cnt].financial_number 		= financial_number 
+	t_rec->verify_qual[t_rec->verify_cnt].order_id 				= o.order_id 
+	t_rec->verify_qual[t_rec->verify_cnt].loc_facility_cd 		= e.loc_facility_cd
+	t_rec->verify_qual[t_rec->verify_cnt].loc_nurse_unit_cd		= e.loc_nurse_unit_cd ;003
+	t_rec->verify_qual[t_rec->verify_cnt].encntr_id 			= e.encntr_id
+	t_rec->verify_qual[t_rec->verify_cnt].person_id 			= e.person_id
+	t_rec->verify_qual[t_rec->verify_cnt].verifying_prsnl_id 	= prx.person_id 
+ foot report
+ 	stat = alterlist(t_rec->verify_qual,(t_rec->verify_cnt))
+ 	call writeLog(build2("<--Leaving Order Verify Query"))	
+  WITH nocounter 
+
 if (t_rec->verify_cnt = 0)
 	set reply->status_data.status = "Z"
 	go to exit_script
 endif
 
-call writeLog(build2("* END   Order Review Query *********************************"))
+call writeLog(build2("* END Pharmcist Order Review Query *************************"))
 call writeLog(build2("************************************************************"))
 
 

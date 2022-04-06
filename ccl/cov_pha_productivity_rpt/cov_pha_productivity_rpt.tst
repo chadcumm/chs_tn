@@ -105,10 +105,10 @@ go
 ;"MINE", "18-AUG-2020 00:00:00", "18-AUG-2020 23:59:00", VALUE(1.0), 0
 set debug_ind = 1 go
 execute COV_PHA_PRODUCTIVITY_RPT
-	  "OPS"
+	  "MINE"
 	 ,0
-	 ,"01-NOV-2020 00:00:00"
-	 ,"01-NOV-2020 23:59:00"
+	 ,"06-APR-2022 00:00:00"
+	 ,"06-APR-2022 23:59:00"
 	 ;,VALUE(2552503613.00) ;MMC
 	 ,value(1.0)
 	 ,0
