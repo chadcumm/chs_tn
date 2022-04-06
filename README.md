@@ -19,3 +19,6 @@
 ### 12206 - Add Action script to Discern Dev for Add Reminder
 2022-04-01: Initial Messaging Script
 2022-04-04: Production Release Created
+
+### 12612 - Update Pharmacy Productivity Report to include orders directly entered by Pharmacists
+2022-04-06: Initial Update
