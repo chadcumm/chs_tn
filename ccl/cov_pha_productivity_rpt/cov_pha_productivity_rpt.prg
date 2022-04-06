@@ -606,7 +606,7 @@ join prx
    and cnvtlower(prx.name_last_key) != '*test*'
    and cnvtupper(prx.name_last_key) != 'UA.*'
  head report
- 	call writeLog(build2("-->Inside Order Verify Query"))
+ 	call writeLog(build2("-->Inside Pharmcist Order Query"))
  detail
  	t_rec->verify_cnt = (t_rec->verify_cnt + 1)
 	;if ((mod(t_rec->verify_cnt,10000) = 1) or (t_rec->verify_cnt = 1))
@@ -645,7 +645,7 @@ join prx
 	t_rec->verify_qual[t_rec->verify_cnt].verifying_prsnl_id 	= prx.person_id 
  foot report
  	stat = alterlist(t_rec->verify_qual,(t_rec->verify_cnt))
- 	call writeLog(build2("<--Leaving Order Verify Query"))	
+ 	call writeLog(build2("<--Leaving Pharmcist Order Query"))	
   WITH nocounter 
 
 if (t_rec->verify_cnt = 0)
