@@ -897,7 +897,7 @@ SELECT INTO $OUTDEV
 	, QUAL_QUANTITY_DISPENSED = OUTPUT->qual[D1.SEQ].quantity_dispensed
 	, QUAL_UNIT_OF_MEASURE = SUBSTRING(1, 30, OUTPUT->qual[D1.SEQ].unit_of_measure)
 	, QUAL_INGREDIENT_COST = OUTPUT->qual[D1.SEQ].ingredient_cost
-	;, QUAL_ORDER_ID = OUTPUT->qual[D1.SEQ].order_id
+	, QUAL_ENCNTR_ID = OUTPUT->qual[D1.SEQ].encntr_id
 	, QUAL_GENDER = OUTPUT->qual[D1.SEQ].gender
 	, QUAL_STATE = SUBSTRING(1, 30, OUTPUT->qual[D1.SEQ].state)
 	, QUAL_REALATIONSHIP = OUTPUT->qual[D1.SEQ].realationship

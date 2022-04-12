@@ -9,3 +9,6 @@ set encntr_id = 125218607 go
 set stat = add_reminder(42467509.0,
 						16908168.0,
 						encntr_id) go
+execute cov_std_message_routines go
+
+call echo(build2("send_discern_notification=",send_discern_notification("CCUMMIN4"))) go

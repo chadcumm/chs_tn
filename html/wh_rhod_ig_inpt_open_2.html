@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta name="discern" content="CCLLINK,CCLNEWWINDOW,CCLEVENT,CCLEKSREPLYOBJECT,MPAGES_EVENT,APPLINK,XMLCCLREQUEST">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="x-ua-compatible" content="IE=edge">
+		<title>Outstanding Planned Powerplans</title>
+		<script src="file:///I:Winintel/static_content/custom_mpage_content/jquery/jquery-3.6.0.min.js"></script>
+ 
+			<script type="text/javascript">
+			try {
+				patobj = {};
+					patobj.patientDataSplit = "@MESSAGE:[PATIENTDATA]";
+					//patobj.patientDataSplit = "16580888|110435344|0"; //TTTTTEST, PERIOPONE
+					patobj.patientData = patobj.patientDataSplit.split("|");
+ 
+					patobj.patientID = patobj.patientData[0];
+					patobj.encounterID = patobj.patientData[1];
+					patobj.prsnlid = patobj.patientData[2];
+					patobj.medrecType = patobj.patientData[3];
+					patobj.PowerPlanType = patobj.patientData[4];
+ 
+ 
+ 
+ 					//alert ('patobj.patientDataSplit:' + patobj.patientDataSplit);
+					//alert ('patobj.patientID:' + patobj.patientID);
+					//alert ('patobj.encounterID:' + patobj.encounterID);
+					//alert ('patobj.medrecType:' + patobj.medrecType);
+					//alert ('patobj.prsnlid:' + patobj.prsnlid);
+ 
+ 
+ 
+			}catch (err) {
+				alert('Patient Data from rule', err);
+			}
+ 
+ 
+		function callOrderProfile() {
+				var eid  = patobj.encounterID;
+				var pid  = patobj.patientID;
+				var prid = patobj.prsnlid;
+				var dismiss_alert = "COV_PLANNED_PP_ORDERS";
+ 				var mrObject = new Object();
+ 				mrObject = window.external.DiscernObjectFactory("ORDERS");;
+				mrObject.PersonId = pid;
+				mrObject.EncntrId = eid;
+				mrObject.defaultVenue =     4055135.00 ; //inpatient
+				mrObject.reconciliationMode = 0 ;// patobj.medrecType; //admit
+				mrObject.LaunchOrdersMode(0,0,0);
+				CCLLINK("eks_call_synch_event", stringForClinicalEvent(pid, eid, prid , dismiss_alert), 1);
+ 				CCLEVENT("EVENT_EKS_OK", "");
+ 
+			}
+ 
+		function callMedsRec() {
+				var eid  = patobj.encounterID;
+				var pid  = patobj.patientID;
+				var prid = patobj.prsnlid;
+				var medsrec = patobj.medrecType;
+				var pp = patobj.PowerPlanType;
+				var dismiss_alert = "COV_PLANNED_PP_MEDREC";
+ 				var mrObject = new Object();
+ 				mrObject = window.external.DiscernObjectFactory("ORDERS");;
+				mrObject.PersonId = pid;
+				mrObject.EncntrId = eid;
+				mrObject.defaultVenue =     4055135.00 ; //inpatient
+				mrObject.reconciliationMode = patobj.medrecType
+				if (medsrec > 0) {
+					mrObject.LaunchOrdersMode(2,0,0);
+					dismiss_alert = "COV_PLANNED_PP_MEDREC";
+				}
+ 
+				if (pp > 0) {
+					mrObject.LaunchOrdersMode(0,0,0);
+					dismiss_alert = "COV_PLANNED_PP_ORDERS";
+				}
+				CCLLINK("eks_call_synch_event", stringForClinicalEvent(pid, eid, prid , dismiss_alert), 1);
+ 				CCLEVENT("EVENT_EKS_OK", "");
+			}
+ 
+    function closeChart(){
+		CCLEVENT("EVENT_EKS_OK", "");
+    }
+ 
+    function stringForClinicalEvent(patId, enctrId, pID, synch_rule){
+    	//Execute eks_call_synch_event "outputdevice", "person_id", "encntr_id", "order_id", "trigger_name", "freetextparam"
+        var ceString = '^COMMITRULE^,^';
+        ceString += (patId + "^,");
+        ceString += ("^" + enctrId + "^,");
+        ceString += ("^0.0^,^" + synch_rule + "^,^");
+        ceString += ("<P>PRSNLID=");
+        ceString += pID;
+        ceString += ("<P>ACTION=");
+        ceString += synch_rule;
+        ceString += '^';
+     	//alert(ceString);
+        return ceString;
+    }
+ 
+    function DismissAlert(){
+    var eid = patobj.encounterID;
+	var pid = patobj.patientID;
+	var prid = patobj.prsnlid;
+	var dismiss_alert = "COV_PLANNED_PP_DISMISS";
+    CCLLINK("eks_call_synch_event", stringForClinicalEvent(pid, eid, prid , dismiss_alert), 1);
+	CCLEVENT("EVENT_EKS_OK", "");
+	}
+ 
+	function changeLabel()
+    {
+    	var medsrec = patobj.medrecType;
+		var pp = patobj.PowerPlanType;
+		if (medsrec > 0)
+		{
+			document.getElementById("OrderProfile").innerHTML = "Medication Reconciliation"
+		}
+		if (pp > 0)
+		{
+			document.getElementById("OrderProfile").innerHTML = "PowerPlan Review"
+		}
+		if (medsrec > 0 && pp > 0)
+		{
+			document.getElementById("OrderProfile").innerHTML = "Medication Reconciliation and PowerPlan Review"
+		}
+    }
+		 </script>
+	</head>
+        <body>
+             <p>
+              The newborn of this patient is Rh Positive and there is no record of a lab-resulted blood type for this patient. Follow-up to determine if this patient needs Rho(D) Immune Globulin.
+             </p>
+            <br>
+ 
+			<table align=center>
+			<tr>
+			<td><button id="DismissDialog" onclick="DismissAlert();">Dismiss and Open Chart</td>
+			</tr>
+ 
+			</table>
+ 
+        </body>
+</html>

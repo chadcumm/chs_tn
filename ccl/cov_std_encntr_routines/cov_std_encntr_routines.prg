@@ -172,6 +172,195 @@ subroutine sGetPersonID_ByEncntrID(vEncntrID)
 end
 
 /**********************************************************************************************************************
+** Function sGetFacility_ByEncntrID(encntr_id,[DISPLAY,DESCRIPTION])
+** ---------------------------------------------------------------------------------------
+** Returns the Facility [display] or description based on the provided encntr_id
+**********************************************************************************************************************/
+declare sGetFacility_ByEncntrID(vEncntrID=f8,vType=vc(VALUE,"DISPLAY")) = vc  with copy, persist
+subroutine sGetFacility_ByEncntrID(vEncntrID,vType)
+
+	declare vReturnFacility = vc with protect
+	
+	select into "nl:"
+	from
+		encounter e
+	plan e
+		where e.encntr_id = vEncntrID
+	order by
+		 e.encntr_id
+	head report
+		i = 0
+	head e.encntr_id
+		if (cnvtupper(vType) = "DESCRIPTION")
+			vReturnFacility = uar_get_code_description(e.loc_facility_cd)
+		else
+			vReturnFacility = uar_get_code_display(e.loc_facility_cd)
+		endif
+	with nocounter
+	
+	return (vReturnFacility)
+
+end
+
+
+/**********************************************************************************************************************
+** Function sGetUnit_ByEncntrID(encntr_id,[DISPLAY,DESCRIPTION])
+** ---------------------------------------------------------------------------------------
+** Returns the Unit [display] or description based on the provided encntr_id
+**********************************************************************************************************************/
+declare sGetUnit_ByEncntrID(vEncntrID=f8,vType=vc(VALUE,"DISPLAY")) = vc  with copy, persist
+subroutine sGetUnit_ByEncntrID(vEncntrID,vType)
+
+	declare vReturnUnit = vc with protect
+	
+	select into "nl:"
+	from
+		encounter e
+	plan e
+		where e.encntr_id = vEncntrID
+	order by
+		 e.encntr_id
+	head report
+		i = 0
+	head e.encntr_id
+		if (cnvtupper(vType) = "DESCRIPTION")
+			vReturnUnit = uar_get_code_description(e.loc_nurse_unit_cd)
+		else
+			vReturnUnit = uar_get_code_display(e.loc_nurse_unit_cd)
+		endif
+	with nocounter
+	
+	return (vReturnUnit)
+
+end
+
+
+/**********************************************************************************************************************
+** Function sGetAppts_ByPersonID()
+** ---------------------------------------------------------------------------------------
+** Returns a list of past or [future] appointments by the PersonID 
+**********************************************************************************************************************/
+declare sGetAppts_ByPersonID(vPersonID=f8,vDays=i2(VALUE,365),vPastFuture=vc(VALUE,"FUTURE")) = vc  with copy, persist
+subroutine sGetAppts_ByPersonID(vPersonID,vDays,vPastFuture)
+
+	call SubroutineLog(build2('start sGetPastAppts_ByPersonID(',vPersonID,',',vDays,',',vPastFuture,')'))
+	
+	declare vReturnAppts = vc with protect
+	declare appt_pass = i2 with protect
+	
+	free record 651164Reply
+	free record 651164Request 
+	record 651164Request (
+	  1 call_echo_ind = i2   
+	  1 program_name = vc  
+	  1 advanced_ind = i2   
+	  1 query_type_cd = f8   
+	  1 query_meaning = vc  
+	  1 sch_query_id = f8   
+	  1 qual [*]   
+	    2 parameter = vc  
+	    2 oe_field_id = f8   
+	    2 oe_field_value = f8   
+	    2 oe_field_display_value = vc  
+	    2 oe_field_dt_tm_value = dq8   
+	    2 oe_field_meaning_id = f8   
+	    2 oe_field_meaning = vc  
+	    2 label_text = vc  
+	)
+	
+	free record appointment_list
+	record appointment_list
+	(
+		1 person_id = f8
+		1 cnt = i4
+		1 qual[*]
+			2 scheventid = f8   
+			2 scheduleid = f8  
+			2 scheduleseq = i4 
+			2 schapptid = f8
+			2 statemeaning = vc
+			2 encounterid = f8  
+			2 personid = f8  
+			2 bitmask = i4  
+			2 schappttypecd = f8   
+			2 beg_dt_tm = dq8   
+			2 duration = i4  
+			2 state = vc   
+			2 appt_type = vc
+			2 appt_reason = vc
+			2 prime_res = vc
+			2 location = vc
+	)
+	
+	
+	if (vPersonID > 0.0)
+	
+		set 651164Request->call_echo_ind = 1 
+		set 651164Request->advanced_ind = 1
+		
+		if (cnvtupper(vPastFuture) = "PAST")
+			set 651164Request->query_meaning = "APPTINDEXPAS" 
+			set 651164Request->program_name = "cov_inqa_appt_index_past" 
+			set 651164Request->sch_query_id = 614425
+		else
+			set 651164Request->query_meaning = "APPTINDEXFUT" 
+			set 651164Request->program_name = "cov_inqa_appt_index_future" 
+			set 651164Request->sch_query_id = 614426
+		endif
+		
+		set 651164Request->query_type_cd = uar_get_code_by("MEANING",14349,651164Request->query_meaning) 
+		 
+		set stat = alterlist(651164Request->qual,1) 
+		set 651164Request->qual[1].oe_field_value =  vPersonID 
+		set 651164Request->qual[1].oe_field_meaning = "PERSON" 
+		
+		call SubroutineLog("651164Request","record")	
+		
+		set stat = tdbexecute(600005,652000,651164,"REC",651164Request,"REC",651164Reply) 
+		
+		call SubroutineLog("651164Reply","record")	
+		
+		for (j=1 to 651164Reply->query_qual_cnt)
+			set appointment_list->person_id = vPersonID
+			set appt_pass = 0
+			if (vDays > 0)
+				if (abs(datetimediff(cnvtdatetime(sysdate),651164reply->query_qual[j].beg_dt_tm,1)) < vDays)
+			   		set appt_pass = 1
+			 	endif
+			else
+			  	set appt_pass = 1
+			endif
+			
+			if (appt_pass = 1)
+				set appointment_list->cnt = (appointment_list->cnt + 1)
+				set stat = alterlist(appointment_list->qual,appointment_list->cnt)
+				set appointment_list->qual[appointment_list->cnt].scheventid   		= 651164reply->query_qual[j].hide#scheventid
+				set appointment_list->qual[appointment_list->cnt].scheduleid  		= 651164reply->query_qual[j].hide#scheduleid
+				set appointment_list->qual[appointment_list->cnt].scheduleseq 	 	= 651164reply->query_qual[j].hide#scheduleseq
+				set appointment_list->qual[appointment_list->cnt].schapptid 		= 651164reply->query_qual[j].hide#schapptid
+				set appointment_list->qual[appointment_list->cnt].statemeaning 		= 651164reply->query_qual[j].hide#statemeaning
+				set appointment_list->qual[appointment_list->cnt].encounterid  		= 651164reply->query_qual[j].hide#encounterid
+				set appointment_list->qual[appointment_list->cnt].personid 			= 651164reply->query_qual[j].hide#personid 
+				set appointment_list->qual[appointment_list->cnt].bitmask  			= 651164reply->query_qual[j].hide#bitmask
+				set appointment_list->qual[appointment_list->cnt].schappttypecd  	= 651164reply->query_qual[j].hide#schappttypecd
+				set appointment_list->qual[appointment_list->cnt].beg_dt_tm  		= 651164reply->query_qual[j].beg_dt_tm
+				set appointment_list->qual[appointment_list->cnt].duration 			= 651164reply->query_qual[j].duration
+				set appointment_list->qual[appointment_list->cnt].state    			= 651164reply->query_qual[j].state
+				set appointment_list->qual[appointment_list->cnt].appt_type 		= 651164reply->query_qual[j].appt_type
+				set appointment_list->qual[appointment_list->cnt].appt_reason 		= 651164reply->query_qual[j].appt_reason
+				set appointment_list->qual[appointment_list->cnt].prime_res 		= 651164reply->query_qual[j].prime_res
+				set appointment_list->qual[appointment_list->cnt].location 			= 651164reply->query_qual[j].location
+			endif	
+		endfor
+	endif
+	
+	set vReturnAppts = cnvtrectojson(appointment_list)
+	
+	return (vReturnAppts)
+
+end
+
+/**********************************************************************************************************************
 ** Function sGetInsuranceByEncntrID()
 ** ---------------------------------------------------------------------------------------
 ** Returns a JSON object that is convertable to a record structure containting all the insurance information for the

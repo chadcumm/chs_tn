@@ -3,7 +3,7 @@ execute
 	cov_smart_template_test
 	
 	 ^MINE^
-	,^5206703181^
-	,^cmctest1^
+	,^2302913670^
+	,^cov_amb_protocol_med_refill^
 
 go

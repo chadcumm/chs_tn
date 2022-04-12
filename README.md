@@ -22,3 +22,9 @@
 
 ### 12616 - Update Pharmacy Productivity Report to include orders directly entered by Pharmacists
 2022-04-06: Initial Update
+### 6965 - Break/Fix: Update WH_RHOD_IG_INPT_ADM_1 to resolve issue with Mother/Baby Link
+2022-04-06: Production release (WH_RHOD_IG_INPT_OPEN_1)
+### 12317 - AMB Global Dot Phrase for Med Refills
+2022-04-05: Initial Development
+Included CRs and Hotfixes
+11669 High-Sensitivity Troponin Automation

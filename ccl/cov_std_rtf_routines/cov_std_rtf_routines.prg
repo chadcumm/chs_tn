@@ -29,6 +29,8 @@ drop program cov_std_rtf_routines:dba go
 create program cov_std_rtf_routines:dba
  
 call echo(build2("starting ",trim(cnvtlower(curprog))))
+
+execute cov_std_log_routines
  
 declare i=i4 with noconstant(0), protect
 declare j=i4 with noconstant(0), protect
@@ -167,24 +169,30 @@ end
 declare    Set_RTFReply(str=vc) = i2 with persist, copy
 subroutine Set_RTFReply(str)
 
+	call SubroutineLog(build2('start Set_RTFReply("',str,'")'))
+	
 	declare vReturnRTFReply = i2 with noconstant(FALSE)
 
-	if (not(validate(reply->text)))
-		return (vReturnRTFReply)
-	endif
+	;if (not(validate(reply->text)))
+	;	call SubroutineLog(build2('->reply->text not defined'))
+	;	return (vReturnRTFReply)
+	;endif
 
 	if (not(validate(rtf_definitions)))
 		set stat = cnvtjsontorec(get_rtf_definitions(null),8)
 	endif
 	
 	if (rtf_definitions->start_ind = 0)
+		call SubroutineLog(build2('->starting rtf_definitions->start_ind'))
 		set reply->text 			= str
 		set reply_rtf				= str
 		set rtf_definitions->start_ind = 1
 	elseif ((rtf_definitions->start_ind = 1) and (rtf_definitions->end_ind = 1))
+		call SubroutineLog(build2('->finishing rtf_definitions->start_ind'))
 		set reply->text 			= reply_rtf
 		call echorecord(reply)
 	else
+		call SubroutineLog(build2('->adding to reply text'))
 		set reply->text = concat(reply->text,str)
 		set reply_rtf 	= concat(reply_rtf,str)
 	endif

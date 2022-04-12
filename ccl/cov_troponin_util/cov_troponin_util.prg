@@ -31,6 +31,9 @@ Mod   Mod Date    Developer              Comment
 ******************************************************************************/
 drop program cov_troponin_util:dba go
 create program cov_troponin_util:dba
+
+execute cov_std_html_routines
+execute cov_std_message_routines
  
 declare i=i4 with noconstant(0), protect
 declare j=i4 with noconstant(0), protect
@@ -44,10 +47,15 @@ declare	SystemPrsnlID = f8 with noconstant(1.0), protect, persist
 declare AddhsTropRefRec(freeRec=i2) = i2 with copy, persist
 declare AddhsTropDataRec(freeRec=i2) = i2 with copy, persist
 declare AddMPEventReply(null) = i2 with copy, persist
+
+declare GetOrderStatus(vOrderID=f8) = f8 with copy, persist
  
 declare GethsTropAlgEC(null) = f8 with copy, persist
 declare GethsTropInterpEC(null) = f8 with copy, persist
+declare GethsTropDeltaEC(null) = f8 with copy, persist
+declare GethsTropTimeEC(null) = f8 with copy, persist
 declare GethsTropAlgOrderMargin(null) = i4 with copy, persist
+declare GethsTropAlgOrderMarginMax(null) = i4 with copy, persist
  
 declare EnsurehsTropAlgData(vPersonID=f8,vEncntrID=f8,vEventID=f8,vJSON=vc) = f8 with copy, persist
 declare RemovehsTropAlgData(vPersonID=f8,vEncntrID=f8,vEventID=f8) = f8 with copy, persist
@@ -116,7 +124,27 @@ declare CallNewECGOrderServer(null) = f8 with copy, persist
  
 declare AddAlgorithmResult(vCEventID=f8) = i2 with copy, persist
 declare AddAlgorithmCEResult(vCEventID=f8) = f8 with copy, persist
+declare AddAlgorithmCEDeltaResult(vCEventID=f8) = f8 with copy, persist
+declare AddAlgorithmCETimeResult(vCEventID=f8) = f8 with copy, persist
  
+
+subroutine GetOrderStatus(vOrderID)
+
+	declare vOrderStatusCd = f8 with noconstant(0.0)
+	
+	select into "nl:"
+	from
+		orders o
+	plan o
+		where o.order_id = vOrderID
+	detail
+		vOrderStatusCd = o.order_status_cd
+	with nocounter
+	
+	return (vOrderStatusCd)
+
+end ;GetOrderStatus
+
  
 subroutine GethsTropOpsDate(vScript)
  
@@ -302,8 +330,244 @@ subroutine AddAlgorithmCEResult(vCEventID)
  
 	return (vReturnSuccess)
  
-end
+end ;AddAlgorithmCEResult
+
+subroutine AddAlgorithmCEDeltaResult(vCEventID)
+	declare vReturnSuccess = f8 with noconstant(FALSE)
+	declare vInterpEC = f8 with constant(GethsTropDeltaEC(null))
+	
+ 	declare vhtml_output = vc with protect
+ 	declare vUsername = vc with protect
+ 	declare vVerifiedPrsnlID = f8 with protect
+ 	
+	if (validate(hsTroponin_data) = FALSE)
+		return (vReturnSuccess)
+	else
+		free record cerequest
+		free record cereply
+%i cclsource:eks_rprq1000012.inc
+		select into "nl:"
+		from
+			clinical_event ce
+		plan ce
+			where ce.clinical_event_id = vCEventID
+		detail
+			cerequest->ensure_type = 2
+			cerequest->clin_event.view_level = 1
+			cerequest->clin_event.person_id = ce.person_id
+			cerequest->clin_event.encntr_id = ce.encntr_id
+			cerequest->clin_event.contributor_system_cd = ce.contributor_system_cd
+			cerequest->clin_event.event_class_cd = uar_get_code_by("MEANING",53,"TXT")
+			cerequest->clin_event.event_cd = vInterpEC
+			cerequest->clin_event.event_tag = cnvtstring(hsTroponin_data->algorithm_info.current_delta)
+			cerequest->clin_event.event_start_dt_tm = ce.event_start_dt_tm
+			cerequest->clin_event.event_end_dt_tm = ce.event_end_dt_tm
+			cerequest->clin_event.event_end_dt_tm_os_ind = 1
+			cerequest->clin_event.record_status_cd = uar_get_code_by("MEANING",48,"ACTIVE")
+			cerequest->clin_event.result_status_cd = uar_get_code_by("MEANING",8,"AUTH")
+			cerequest->clin_event.authentic_flag_ind = 1
+			cerequest->clin_event.publish_flag = 1
+			case (hsTroponin_data->algorithm_info.current_normalcy)
+				of "RULED OUT": 		cerequest->clin_event.normalcy_cd = uar_get_code_by_cki("CKI.CODEVALUE!2690")	;Normal
+				of "NO INJURY":			cerequest->clin_event.normalcy_cd = uar_get_code_by_cki("CKI.CODEVALUE!2690")	;Normal
+				of "INDETERMINATE":		cerequest->clin_event.normalcy_cd = uar_get_code_by_cki("CKI.CODEVALUE!2680")	;Abnormal
+				of "ABNORMAL":			cerequest->clin_event.normalcy_cd = uar_get_code_by_cki("CKI.CODEVALUE!3707")	;Extreme High
+			else
+				cerequest->clin_event.normalcy_cd = uar_get_code_by_cki("CKI.CODEVALUE!3707")	;>Extreme High
+			endcase
  
+			cerequest->clin_event.subtable_bit_map = 8193
+			cerequest->clin_event.expiration_dt_tm_ind = 1
+			cerequest->clin_event.valid_from_dt_tm = ce.valid_from_dt_tm
+			cerequest->clin_event.valid_until_dt_tm = ce.valid_until_dt_tm
+			cerequest->clin_event.valid_from_dt_tm_ind = 1
+			cerequest->clin_event.valid_until_dt_tm_ind = 1
+			cerequest->clin_event.verified_dt_tm_ind = 1
+			cerequest->clin_event.performed_dt_tm = cnvtdatetime(curdate,curtime3)
+			cerequest->clin_event.performed_prsnl_id = 1
+			cerequest->clin_event.updt_id = 1
+			cerequest->clin_event.updt_dt_tm = cnvtdatetime(curdate,curtime)
+			cerequest->ensure_type2 = 1
+ 
+			stat = alterlist(cerequest->clin_event.string_result,1)
+			cerequest->clin_event.string_result.string_result_text = cnvtstring(hsTroponin_data->algorithm_info.current_delta)
+			cerequest->clin_event.string_result.string_result_format_cd = uar_get_code_by("MEANING",14113,"ALPHA")
+			cerequest->clin_event.string_result.last_norm_dt_tm_ind = 1
+			cerequest->clin_event.string_result.feasible_ind_ind = 1
+			cerequest->clin_event.string_result.inaccurate_ind_ind = 1
+ 
+			stat = alterlist(cerequest->clin_event.event_prsnl_list,2)
+			cerequest->clin_event.event_prsnl_list[1].person_id = ce.person_id
+			cerequest->clin_event.event_prsnl_list[1].action_type_cd = 112
+			cerequest->clin_event.event_prsnl_list[1].request_dt_tm_ind = 1
+			cerequest->clin_event.event_prsnl_list[1].action_dt_tm = cnvtdatetime(curdate,curtime3)
+			cerequest->clin_event.event_prsnl_list[1].action_prsnl_id = 1.0
+			cerequest->clin_event.event_prsnl_list[1].action_status_cd = 653
+			cerequest->clin_event.event_prsnl_list[1].valid_until_dt_tm = cnvtdatetime("31-DEC-2100 00:00:00")
+ 
+			cerequest->clin_event.event_prsnl_list[2].person_id = ce.person_id
+			cerequest->clin_event.event_prsnl_list[2].action_type_cd = 104
+			cerequest->clin_event.event_prsnl_list[2].request_dt_tm_ind = 1
+			cerequest->clin_event.event_prsnl_list[2].action_dt_tm = cnvtdatetime(curdate,curtime3)
+			cerequest->clin_event.event_prsnl_list[2].action_prsnl_id = 1.0
+			cerequest->clin_event.event_prsnl_list[2].action_status_cd = 653
+			cerequest->clin_event.event_prsnl_list[2].valid_until_dt_tm = cnvtdatetime("31-DEC-2100 00:00:00")
+			
+			vVerifiedPrsnlID = ce.verified_prsnl_id
+			
+		with nocounter
+ 
+		set stat = tdbexecute(0,3055000,1000012,"REC",CERequest,"REC",CEReply,1)
+ 
+		call echo(build2("CEReply->rb_list[1].event_id=",CEReply->rb_list[1].event_id))
+		if (validate(CEReply->rb_list[1].event_id))
+			set vReturnSuccess = CEReply->rb_list[1].event_id
+			
+		 	if (hsTroponin_data->algorithm_info.current_delta >= 7)
+				set vhtml_output = get_html_template("cov_troponin_util_notify.html")
+ 				set vUsername = sGetUsername(vVerifiedPrsnlID)
+ 				
+ 				set vhtml_output = add_patientdata(cerequest->clin_event.person_id,cerequest->clin_event.encntr_id,vhtml_output)
+
+ 				set vhtml_output = replace_html_token(
+ 													 vhtml_output
+ 													,"%%DELTA_VALUE%%"
+ 													,cnvtstring(hsTroponin_data->algorithm_info.current_delta)
+ 													)	
+ 													
+ 			
+ 				set vhtml_output = replace_html_token(
+ 													 vhtml_output
+ 													,"%%RESULT_VALUE%%"
+ 													,cnvtstring(hsTroponin_data->algorithm_info.current_result_val)
+ 													)	
+ 																						
+ 				call echo(build2("vhtml_output=",vhtml_output))  
+ 				set stat = send_discern_notification(vUsername,"Critical Troponin HS Result",vhtml_output)
+		 	endif 	
+		 	
+		else
+			call echo("CEReply->rb_list[1].event_id not valid")
+			set vReturnSuccess = FALSE
+		endif
+	endif
+ 
+	return (vReturnSuccess)
+ 
+end
+
+
+subroutine AddAlgorithmCETimeResult(vCEventID)
+	declare vReturnSuccess = f8 with noconstant(FALSE)
+	declare vInterpEC = f8 with constant(GethsTropTimeEC(null))
+ 	declare vTimeValue = vc with noconstant("ERROR")
+ 	
+	if (validate(hsTroponin_data) = FALSE)
+		return (vReturnSuccess)
+	else
+		free record cerequest
+		free record cereply
+%i cclsource:eks_rprq1000012.inc
+		select into "nl:"
+		from
+			clinical_event ce
+		plan ce
+			where ce.clinical_event_id = vCEventID
+		detail
+			cerequest->ensure_type = 2
+			cerequest->clin_event.view_level = 1
+			cerequest->clin_event.person_id = ce.person_id
+			cerequest->clin_event.encntr_id = ce.encntr_id
+			cerequest->clin_event.contributor_system_cd = ce.contributor_system_cd
+			cerequest->clin_event.event_class_cd = uar_get_code_by("MEANING",53,"TXT")
+			cerequest->clin_event.event_cd = vInterpEC
+			
+			if (hsTroponin_data->algorithm_info.current_phase = "ONEHOUR")
+				vTimeValue = concat(
+											trim(cnvtstring(datetimediff(hsTroponin_data->one_hour.collect_dt_tm,
+																	hsTroponin_data->initial.collect_dt_tm,4)))
+										 ," min")
+			elseif (hsTroponin_data->algorithm_info.current_phase = "THREEHOUR")
+				vTimeValue = concat(
+											trim(cnvtstring(datetimediff(hsTroponin_data->three_hour.collect_dt_tm,
+																	hsTroponin_data->initial.collect_dt_tm,4)))
+										 ," min")
+			endif
+			cerequest->clin_event.event_tag = vTimeValue
+			cerequest->clin_event.event_start_dt_tm = ce.event_start_dt_tm
+			cerequest->clin_event.event_end_dt_tm = ce.event_end_dt_tm
+			cerequest->clin_event.event_end_dt_tm_os_ind = 1
+			cerequest->clin_event.record_status_cd = uar_get_code_by("MEANING",48,"ACTIVE")
+			cerequest->clin_event.result_status_cd = uar_get_code_by("MEANING",8,"AUTH")
+			cerequest->clin_event.authentic_flag_ind = 1
+			cerequest->clin_event.publish_flag = 1
+			case (hsTroponin_data->algorithm_info.current_normalcy)
+				of "RULED OUT": 		cerequest->clin_event.normalcy_cd = uar_get_code_by_cki("CKI.CODEVALUE!2690")	;Normal
+				of "NO INJURY":			cerequest->clin_event.normalcy_cd = uar_get_code_by_cki("CKI.CODEVALUE!2690")	;Normal
+				of "INDETERMINATE":		cerequest->clin_event.normalcy_cd = uar_get_code_by_cki("CKI.CODEVALUE!2680")	;Abnormal
+				of "ABNORMAL":			cerequest->clin_event.normalcy_cd = uar_get_code_by_cki("CKI.CODEVALUE!3707")	;Extreme High
+			else
+				cerequest->clin_event.normalcy_cd = uar_get_code_by_cki("CKI.CODEVALUE!3707")	;>Extreme High
+			endcase
+			
+ 			cerequest->clin_event.normalcy_cd = uar_get_code_by_cki("CKI.CODEVALUE!2690")	;override above and always post Normal
+ 			
+			cerequest->clin_event.subtable_bit_map = 8193
+			cerequest->clin_event.expiration_dt_tm_ind = 1
+			cerequest->clin_event.valid_from_dt_tm = ce.valid_from_dt_tm
+			cerequest->clin_event.valid_until_dt_tm = ce.valid_until_dt_tm
+			cerequest->clin_event.valid_from_dt_tm_ind = 1
+			cerequest->clin_event.valid_until_dt_tm_ind = 1
+			cerequest->clin_event.verified_dt_tm_ind = 1
+			cerequest->clin_event.performed_dt_tm = cnvtdatetime(curdate,curtime3)
+			cerequest->clin_event.performed_prsnl_id = 1
+			cerequest->clin_event.updt_id = 1
+			cerequest->clin_event.updt_dt_tm = cnvtdatetime(curdate,curtime)
+			cerequest->ensure_type2 = 1
+ 
+			stat = alterlist(cerequest->clin_event.string_result,1)
+			cerequest->clin_event.string_result.string_result_text = vTimeValue
+			cerequest->clin_event.string_result.string_result_format_cd = uar_get_code_by("MEANING",14113,"ALPHA")
+			cerequest->clin_event.string_result.last_norm_dt_tm_ind = 1
+			cerequest->clin_event.string_result.feasible_ind_ind = 1
+			cerequest->clin_event.string_result.inaccurate_ind_ind = 1
+ 
+			stat = alterlist(cerequest->clin_event.event_prsnl_list,2)
+			cerequest->clin_event.event_prsnl_list[1].person_id = ce.person_id
+			cerequest->clin_event.event_prsnl_list[1].action_type_cd = 112
+			cerequest->clin_event.event_prsnl_list[1].request_dt_tm_ind = 1
+			cerequest->clin_event.event_prsnl_list[1].action_dt_tm = cnvtdatetime(curdate,curtime3)
+			cerequest->clin_event.event_prsnl_list[1].action_prsnl_id = 1.0
+			cerequest->clin_event.event_prsnl_list[1].action_status_cd = 653
+			cerequest->clin_event.event_prsnl_list[1].valid_until_dt_tm = cnvtdatetime("31-DEC-2100 00:00:00")
+ 
+			cerequest->clin_event.event_prsnl_list[2].person_id = ce.person_id
+			cerequest->clin_event.event_prsnl_list[2].action_type_cd = 104
+			cerequest->clin_event.event_prsnl_list[2].request_dt_tm_ind = 1
+			cerequest->clin_event.event_prsnl_list[2].action_dt_tm = cnvtdatetime(curdate,curtime3)
+			cerequest->clin_event.event_prsnl_list[2].action_prsnl_id = 1.0
+			cerequest->clin_event.event_prsnl_list[2].action_status_cd = 653
+			cerequest->clin_event.event_prsnl_list[2].valid_until_dt_tm = cnvtdatetime("31-DEC-2100 00:00:00")
+		with nocounter
+ 
+		set stat = tdbexecute(0,3055000,1000012,"REC",CERequest,"REC",CEReply,1)
+ 
+		;call echojson(CEReply,"cmc2.json")
+		call echorecord(CERequest)
+		call echorecord(CEReply)
+		
+		call echo(build2("CEReply->rb_list[1].event_id=",CEReply->rb_list[1].event_id))
+		if (validate(CEReply->rb_list[1].event_id))
+			set vReturnSuccess = CEReply->rb_list[1].event_id
+		else
+			call echo("CEReply->rb_list[1].event_id not valid")
+			set vReturnSuccess = FALSE
+		endif
+	endif
+ 
+	return (vReturnSuccess)
+ 
+end
  
  
 subroutine AddAlgorithmResult(vCEventID)
@@ -328,7 +592,15 @@ end
 subroutine GethsTropAlgOrderMargin(null)
 	declare vReturnNumberofMinues = i4 with noconstant(0), protect
  
-	set vReturnNumberofMinues = 180 ;150 ;(2.5 hours)
+	set vReturnNumberofMinues = 30 ;(1 hours)
+ 	
+	return (vReturnNumberofMinues)
+end ;GethsTropAlgOrderMargin
+
+subroutine GethsTropAlgOrderMarginMax(null)
+	declare vReturnNumberofMinues = i4 with noconstant(0), protect
+ 
+	set vReturnNumberofMinues = 360 ;(6 hours)
  
 	return (vReturnNumberofMinues)
 end ;GethsTropAlgOrderMargin
@@ -460,8 +732,8 @@ subroutine UpdateCurrentPhase(vCurrentPhase)
 	else
 		if (hsTroponin_data->algorithm_info.type = "ED")
 			case (vCurrentPhase)
-				of "INITIAL":	set vReturnPhase = "ONEHOUR"
-				of "ONEHOUR":	set vReturnPhase = "THREEHOUR"
+				of "INITIAL":	set vReturnPhase = "THREEHOUR"
+				;of "ONEHOUR":	set vReturnPhase = "THREEHOUR"
 				of "THREEHOUR": set vReturnPhase = "END"
 			endcase
 		elseif (hsTroponin_data->algorithm_info.type = "INPATIENT")
@@ -793,11 +1065,11 @@ subroutine DeterminehsTropAlg(vOrderID)
 			;ED Troponin HS (Symptoms < 3 hrs)
  
 			;set orderes to drop immediately when first result is recieved
-			set hsTroponin_data->algorithm_info.immediate_orders = 1
+			set hsTroponin_data->algorithm_info.immediate_orders = 0
  
  			;assume one and three hour will be needed
-			set hsTroponin_data->one_hour.needed_ind = 1
-			set hsTroponin_data->three_hour.needed_ind = 0
+			set hsTroponin_data->one_hour.needed_ind = 0
+			set hsTroponin_data->three_hour.needed_ind = 1
  		elseif (hsTroponin_data->algorithm_info.type = "INPATIENT")
  
 			;set orderes to drop immediately when first result is recieved
@@ -1003,20 +1275,20 @@ subroutine SetNormalcybyMilestone(vMilestone)
 						set hsTroponin_data->one_hour.needed_ind = 0
 						set hsTroponin_data->three_hour.needed_ind = 0
 					else
-						if (hsTroponin_data->initial.result_val < 6)
+						if (hsTroponin_data->initial.result_val <= 6)
 							set vReturnNormalcy = "RULED OUT"
 							set hsTroponin_data->one_hour.needed_ind = 0
 							set hsTroponin_data->three_hour.needed_ind = 0
 							;0A
-						elseif ((hsTroponin_data->initial.result_val >= 6) and (hsTroponin_data->initial.result_val <= 51))
+						elseif ((hsTroponin_data->initial.result_val > 6) and (hsTroponin_data->initial.result_val <= 51))
 							set vReturnNormalcy = "INDETERMINATE"
-							set hsTroponin_data->one_hour.needed_ind = 1
-							set hsTroponin_data->three_hour.needed_ind = 0
+							set hsTroponin_data->one_hour.needed_ind = 0
+							set hsTroponin_data->three_hour.needed_ind = 1
 							;0B and 0C
 						elseif (hsTroponin_data->initial.result_val >= 52)
-							set vReturnNormalcy = "ABNORMAL"
-							set hsTroponin_data->one_hour.needed_ind = 1
-							set hsTroponin_data->three_hour.needed_ind = 0
+							set vReturnNormalcy = "INDETERMINATE"
+							set hsTroponin_data->one_hour.needed_ind = 0
+							set hsTroponin_data->three_hour.needed_ind = 1
 							;0D
 	 				 	endif
 	 				 endif
@@ -1025,20 +1297,20 @@ subroutine SetNormalcybyMilestone(vMilestone)
 					set hsTroponin_data->one_hour.needed_ind = 0
 					set hsTroponin_data->three_hour.needed_ind = 0
  				 else
-					if (hsTroponin_data->initial.result_val < 6)
+					if (hsTroponin_data->initial.result_val <= 6)
 						set vReturnNormalcy = "RULED OUT"
 						set hsTroponin_data->one_hour.needed_ind = 0
 						set hsTroponin_data->three_hour.needed_ind = 0
 						;0A
-					elseif ((hsTroponin_data->initial.result_val >= 6) and (hsTroponin_data->initial.result_val <= 51))
+					elseif ((hsTroponin_data->initial.result_val > 6) and (hsTroponin_data->initial.result_val <= 51))
 						set vReturnNormalcy = "INDETERMINATE"
-						set hsTroponin_data->one_hour.needed_ind = 1
-						set hsTroponin_data->three_hour.needed_ind = 0
+						set hsTroponin_data->one_hour.needed_ind = 0
+						set hsTroponin_data->three_hour.needed_ind = 1
 						;0B and 0C
 					elseif (hsTroponin_data->initial.result_val >= 52)
-						set vReturnNormalcy = "ABNORMAL"
-						set hsTroponin_data->one_hour.needed_ind = 1
-						set hsTroponin_data->three_hour.needed_ind = 0
+						set vReturnNormalcy = "INDETERMINATE"
+						set hsTroponin_data->one_hour.needed_ind = 0
+						set hsTroponin_data->three_hour.needed_ind = 1
 						;0D
 					endif
  				 endif
@@ -1094,7 +1366,7 @@ subroutine SetNormalcybyMilestone(vMilestone)
 							;1F
 						endif
 						if (hsTroponin_data->one_hour.result_val >= 52)
-							set vReturnNormalcy = "ABNORMAL"
+							set vReturnNormalcy = "INDETERMINATE"
 							set hsTroponin_data->three_hour.needed_ind = 0
 							;1G
 						endif
@@ -1109,7 +1381,7 @@ subroutine SetNormalcybyMilestone(vMilestone)
 						;3B and 3E and 3H
 					elseif (hsTroponin_data->three_hour.delta < 7)
 						if (hsTroponin_data->initial.result_val >= 52)
-							set vReturnNormalcy = "NO INJURY"
+							set vReturnNormalcy = "RULED OUT"
 							;3G
 						else
 							set vReturnNormalcy = "RULED OUT"
@@ -1117,12 +1389,12 @@ subroutine SetNormalcybyMilestone(vMilestone)
 						endif
 					endif
  
-					if (hsTroponin_data->three_hour.result_val >= 52)
-						if (hsTroponin_data->initial.result_val < 52)
-							set vReturnNormalcy = "ABNORMAL"
-							;3C and 3F
-						endif
-					endif
+					;if (hsTroponin_data->three_hour.result_val >= 52)
+					;	if (hsTroponin_data->initial.result_val < 52)
+					;		set vReturnNormalcy = "ABNORMAL"
+					;		;3C and 3F
+					;	endif
+					;endif
  
 				endif
  
@@ -1131,13 +1403,13 @@ subroutine SetNormalcybyMilestone(vMilestone)
 				if (cnvtupper(vMilestone) = "INITIAL")
 					if ((hsTroponin_data->initial.result_val >= 0) and (hsTroponin_data->initial.result_val <= 51))
 						set vReturnNormalcy = "INDETERMINATE"
-						set hsTroponin_data->one_hour.needed_ind = 1
-						set hsTroponin_data->three_hour.needed_ind = 0
+						set hsTroponin_data->one_hour.needed_ind = 0
+						set hsTroponin_data->three_hour.needed_ind = 1
 						;0A
 					elseif (hsTroponin_data->initial.result_val >= 52)
-						set vReturnNormalcy = "ABNORMAL"
-						set hsTroponin_data->one_hour.needed_ind = 1
-						set hsTroponin_data->three_hour.needed_ind = 0
+						set vReturnNormalcy = "INDETERMINATE"
+						set hsTroponin_data->one_hour.needed_ind = 0
+						set hsTroponin_data->three_hour.needed_ind = 1
 						;0B
 					endif
 				elseif (cnvtupper(vMilestone) = "ONEHOUR")
@@ -1170,7 +1442,7 @@ subroutine SetNormalcybyMilestone(vMilestone)
 						endif
  
 						if (hsTroponin_data->one_hour.result_val >= 52)
-							set vReturnNormalcy = "ABNORMAL"
+							set vReturnNormalcy = "INDETERMINATE"
 							set hsTroponin_data->three_hour.needed_ind = 0
 							;1C
 						endif
@@ -1184,7 +1456,7 @@ subroutine SetNormalcybyMilestone(vMilestone)
 						;3B and 3E
 					elseif (hsTroponin_data->three_hour.delta < 7)
 						if (hsTroponin_data->initial.result_val >= 52)
-							set vReturnNormalcy = "NO INJURY"
+							set vReturnNormalcy = "RULED OUT"
 							;3D
 						else
 							set vReturnNormalcy = "RULED OUT"
@@ -1192,12 +1464,12 @@ subroutine SetNormalcybyMilestone(vMilestone)
 						endif
 					endif
  
-					if (hsTroponin_data->three_hour.result_val >= 52)
-						if (hsTroponin_data->initial.result_val < 52)
-							set vReturnNormalcy = "ABNORMAL"
-							;3C
-						endif
-					endif
+					;if (hsTroponin_data->three_hour.result_val >= 52)
+					;	if (hsTroponin_data->initial.result_val < 52)
+					;		set vReturnNormalcy = "ABNORMAL"
+					;		;3C
+					;	endif
+					;endif
  
 				endif
 			endif
@@ -1207,7 +1479,7 @@ subroutine SetNormalcybyMilestone(vMilestone)
 					set vReturnNormalcy = "INDETERMINATE"
 					;0A
 				elseif (hsTroponin_data->initial.result_val >= 52)
-					set vReturnNormalcy = "ABNORMAL"
+					set vReturnNormalcy = "INDETERMINATE"
 					;0B
 				endif
 			elseif (cnvtupper(vMilestone) = "THREEHOUR")
@@ -1218,7 +1490,7 @@ subroutine SetNormalcybyMilestone(vMilestone)
 					;3B and 3E
 				elseif (hsTroponin_data->three_hour.delta < 7)
 					if (hsTroponin_data->initial.result_val >= 52)
-						set vReturnNormalcy = "NO INJURY"
+						set vReturnNormalcy = "RULED OUT"
 						;3D
 					else
 						set vReturnNormalcy = "RULED OUT"
@@ -1226,12 +1498,12 @@ subroutine SetNormalcybyMilestone(vMilestone)
 					endif
 				endif
  
-				if (hsTroponin_data->three_hour.result_val >= 52)
-					if (hsTroponin_data->initial.result_val < 52)
-						set vReturnNormalcy = "ABNORMAL"
-						;3C
-					endif
-				endif
+				;if (hsTroponin_data->three_hour.result_val >= 52)
+				;	if (hsTroponin_data->initial.result_val < 52)
+				;		set vReturnNormalcy = "ABNORMAL"
+				;		;3C
+				;	endif
+				;endif
 			endif
 		endif
 	endif
@@ -1253,8 +1525,12 @@ subroutine SetNormalcybyMilestone(vMilestone)
 						set vCollectDtTm = format(hsTroponin_data->initial.collect_dt_tm,"dd-mmm-yyyy hh:mm:ss zzz;;q")
 		of "ONEHOUR":	set vMilestoneDisplay = "1h"
 						set vCollectDtTm = format(hsTroponin_data->one_hour.collect_dt_tm,"dd-mmm-yyyy hh:mm:ss zzz;;q")
+						set hsTroponin_data->algorithm_info.current_delta = hsTroponin_data->one_hour.delta
+						set hsTroponin_data->algorithm_info.current_result_val = hsTroponin_data->one_hour.result_val
 		of "THREEHOUR":	set vMilestoneDisplay = "3h"
 						set vCollectDtTm = format(hsTroponin_data->three_hour.collect_dt_tm,"dd-mmm-yyyy hh:mm:ss zzz;;q")
+						set hsTroponin_data->algorithm_info.current_delta = hsTroponin_data->three_hour.delta
+						set hsTroponin_data->algorithm_info.current_result_val = hsTroponin_data->three_hour.result_val
 	endcase
 	
 	select into "nl:"
@@ -1292,7 +1568,7 @@ subroutine SetNormalcybyMilestone(vMilestone)
 	set hsTroponin_data->algorithm_info.current_full_normalcy = concat(
 																		 	 hsTroponin_data->algorithm_info.current_full_normalcy
 																			," ["
-																			,vCollectDtTm
+																			,vMilestoneDisplay
 																			,"]"
 																	   )
 																		
@@ -1644,7 +1920,7 @@ subroutine EnsurehsTropAlgData(vPersonID,vEncntrID,vEventID,vJSON)
 	return (rParentEventID)
  
 end ;EnsurehsTropAlgData
- 
+
 subroutine GethsTropInterpEC(null)
 	declare hsTropInterpEC = f8 with protect
  
@@ -1664,6 +1940,46 @@ subroutine GethsTropInterpEC(null)
  
 	return (hsTropInterpEC)
 end ;GethsTropInterpEC
+
+subroutine GethsTropDeltaEC(null)
+	declare hsTropDeltaEC = f8 with protect
+ 
+	select into "nl:"
+	from
+		code_value cv
+	plan cv
+		where cv.code_set = 72
+		and   cv.active_ind = 1
+		and   cv.display = "hs Troponin Delta"
+	order by
+		cv.begin_effective_dt_tm desc
+		,cv.display
+	head cv.display
+		hsTropDeltaEC = cv.code_value
+	with nocounter
+ 
+	return (hsTropDeltaEC)
+end ;GethsTropDeltaEC
+ 
+subroutine GethsTropTimeEC(null)
+	declare hsTropTimeEC = f8 with protect
+ 
+	select into "nl:"
+	from
+		code_value cv
+	plan cv
+		where cv.code_set = 72
+		and   cv.active_ind = 1
+		and   cv.display = "hs Troponin Timeframe"
+	order by
+		cv.begin_effective_dt_tm desc
+		,cv.display
+	head cv.display
+		hsTropTimeEC = cv.code_value
+	with nocounter
+ 
+	return (hsTropTimeEC)
+end ;GethsTropTimeEC
  
  
 subroutine GethsTropAlgEC(null)

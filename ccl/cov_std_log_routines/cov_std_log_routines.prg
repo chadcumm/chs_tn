@@ -197,6 +197,31 @@ subroutine SubroutineDebug(null)
     endif
     return (pDebugVar)
 end ;SubroutineDebug
+
+
+
+/**********************************************************************************************************************
+** Function sGetUsername(person_id)
+** ---------------------------------------------------------------------------------------
+** Returns the username associated to the person_id supplied
+**********************************************************************************************************************/
+declare sGetUsername(vPersonID=f8) = vc  with copy, persist
+subroutine sGetUsername(vPersonID)
+
+	declare vReturnUsername = vc with protect
+	
+	select into "nl:"
+	from
+		prsnl p
+	plan p
+		where p.person_id = vPersonID
+	detail
+		vReturnUsername = p.username
+	with nocounter
+	
+	return (vReturnUsername)
+end
+
  
 call echo(build2("finishing ",trim(cnvtlower(curprog))))
  

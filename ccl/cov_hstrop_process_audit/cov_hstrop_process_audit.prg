@@ -84,6 +84,7 @@ record t_rec
 	 2 run_dt_tm 				= dq8
 	 2 hsTrop_cd				= f8
 	 2 order_dt_tm_margin_min	= i4
+	 2 order_dt_tm_margin_max	= i4
 	 2 fin						= vc
 	 2 encntr_id 				= f8
 	 2 encntr_operator			= vc
@@ -144,6 +145,8 @@ record t_rec
 	 	3 order_id 		= f8
 		3 collect_dt_tm = dq8
 		3 target_dt_tm 	= dq8
+		3 min_until_placed = i4
+		3 min_until_canceled = i4
 		3 cancel_ind    = i4
 		3 run_dt_tm_diff = i4
 		3 order_now_ind	= i4
@@ -172,6 +175,7 @@ set t_rec->cons.run_dt_tm		= cnvtdatetime(curdate,curtime3)
  
 set t_rec->cons.hsTrop_cd = GethsTropAlgEC(null)
 set t_rec->cons.order_dt_tm_margin_min = GethsTropAlgOrderMargin(null)
+set t_rec->cons.order_dt_tm_margin_max = GethsTropAlgOrderMarginMax(null)
  
 set t_rec->dates.start_dt_tm = t_rec->prompts.beg_dt_tm
 set t_rec->dates.stop_dt_tm = t_rec->prompts.end_dt_tm
@@ -279,7 +283,17 @@ for (i=1 to t_rec->event_cnt)
 		set t_rec->event_list[i].three_hour.needed_ind			= hsTroponin_data->three_hour.needed_ind
 		set t_rec->event_list[i].three_hour.order_id			= hsTroponin_data->three_hour.order_id
 		set t_rec->event_list[i].three_hour.target_dt_tm		= hsTroponin_data->three_hour.target_dt_tm
- 
+ 		set t_rec->event_list[i].three_hour.run_dt_tm_diff
+																= datetimediff(
+																				t_rec->cons.run_dt_tm,
+																				t_rec->event_list[i].initial.collect_dt_tm,4)
+ 		set t_rec->event_list[i].three_hour.min_until_canceled = (t_Rec->cons.order_dt_tm_margin_max -
+ 																t_rec->event_list[i].three_hour.run_dt_tm_diff)
+ 		set t_rec->event_list[i].three_hour.min_until_placed = (
+ 																datetimediff(
+																				 t_rec->event_list[i].three_hour.target_dt_tm
+																				,t_rec->cons.run_dt_tm,4)
+																-t_rec->cons.order_dt_tm_margin_min)
 		set t_rec->event_list[i].algorithm.type					= hsTroponin_data->algorithm_info.type
 		set t_rec->event_list[i].algorithm.subtype				= hsTroponin_data->algorithm_info.subtype
 		set t_rec->event_list[i].algorithm.current_phase		= hsTroponin_data->algorithm_info.current_phase

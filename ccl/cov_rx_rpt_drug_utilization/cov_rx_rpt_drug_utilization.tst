@@ -12,7 +12,7 @@ go
 /*
 execute 
 	COV_RX_RPT_DRUG_UTILIZATION	
-	 "cer_temp:3_medreb8.csv"
+	 "cer_temp:4_medreb8.csv"
 	,"Drug              "
 	, "*"
 	, "*"
