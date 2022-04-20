@@ -94,8 +94,12 @@ declare ERYTHROMYCIN_VAR    	= f8 with constant(uar_get_code_by("DISPLAYKEY",  7
 declare PHYTONADIONE_VAR    	= f8 with constant(uar_get_code_by("DISPLAYKEY",  72, "PHYTONADIONE")),protect
 declare HEPATITISBPEDIATRIC_VAR	= f8 with constant(uar_get_code_by("DISPLAYKEY",  72, "HEPATITISBPEDIATRICVACCINE")),protect
 declare HEPATITISBIMMUNEGLOBULIN_VAR	= f8 with constant(uar_get_code_by("DISPLAYKEY",  72, "HEPATITISBIMMUNEGLOBULIN")),protect
+declare GLUCOSE_VAR				= f8 with constant(uar_get_code_by("DISPLAYKEY",  72, "GLUCOSE")),protect
 declare NEWBORN_TYPE_VAR		= f8 with constant(uar_get_code_by("DISPLAYKEY",  71, "NEWBORN")),protect
 declare ORDERED_VAR				= f8 with constant(uar_get_code_by("DISPLAYKEY",6004, "ORDERED")),protect
+declare LIDOCAINEPRILOCAINETOPICAL_VAR	= f8 with constant(uar_get_code_by("DISPLAYKEY",  72, "LIDOCAINEPRILOCAINETOPICAL")),protect
+declare LIDOCAINE_VAR	= f8 with constant(uar_get_code_by("DISPLAYKEY",  72, "LIDOCAINE")),protect
+declare ACETAMINOPHEN_VAR = f8 with constant(uar_get_code_by("DISPLAYKEY",  72, "ACETAMINOPHEN")),protect
 ;--
 declare ACTIVE_VAR				= f8 with constant(uar_get_code_by("MEANING",8, "ACTIVE")),protect
 declare AUTHVERIFIED_VAR		= f8 with constant(uar_get_code_by("MEANING",8, "AUTH")),protect
@@ -137,6 +141,9 @@ from ENCOUNTER e
 		and ce.event_cd in (	ERYTHROMYCIN_VAR
 							, PHYTONADIONE_VAR
 							, HEPATITISBPEDIATRIC_VAR
+							,LIDOCAINEPRILOCAINETOPICAL_VAR
+							,LIDOCAINE_VAR
+							,ACETAMINOPHEN_VAR
 							, HEPATITISBIMMUNEGLOBULIN_VAR) ;2797711, 2798478, 19952796
 		and ce.result_status_cd in (ACTIVE_VAR, AUTHVERIFIED_VAR, MODIFIED_VAR, ALTERED_VAR, NOTDONE_VAR) ;23,25,34,35,36
 		and ce.valid_until_dt_tm > cnvtdatetime (curdate ,curtime3))
@@ -189,7 +196,79 @@ detail
 		rec->list[cnt].dosage = "N/A"
 	endif
  
+
+
+
+;====================================================
+;GLUCOSE SPECIFIC MEDICATIONS
+;====================================================
+select distinct
+from ENCOUNTER e
  
+	,(inner join ENCNTR_ALIAS ea on ea.encntr_id = e.encntr_id
+		and ea.encntr_alias_type_cd = FIN_VAR ;1077
+;		and ea.alias = "1919700054"
+		and ea.active_ind = 1)
+ 
+	,(inner join CLINICAL_EVENT ce on ce.encntr_id = e.encntr_id
+		and ce.person_id = e.person_id
+		and ce.event_cd in (GLUCOSE_VAR) 
+		and ce.result_status_cd in (ACTIVE_VAR, AUTHVERIFIED_VAR, MODIFIED_VAR, ALTERED_VAR, NOTDONE_VAR) ;23,25,34,35,36
+		and ce.valid_until_dt_tm > cnvtdatetime (curdate ,curtime3))
+ 
+	,(inner join PERSON p on p.person_id = e.person_id
+		and p.active_ind = 1)
+		
+	,(inner join ORDERS o on O.order_id = ce.order_id)
+	
+	,(inner join ORDER_CATALOG_SYNONYM ocs on ocs.synonym_id = o.synonym_id
+		and ocs.mnemonic = "glucose 40% oral gel")
+ 
+	,(left join CE_MED_RESULT cmr on cmr.event_id = ce.event_id
+		and cmr.valid_until_dt_tm > cnvtdatetime(curdate ,curtime3))
+ 
+where e.encntr_id = request->visit[1].encntr_id
+	and e.encntr_type_cd = NEWBORN_TYPE_VAR
+	and e.active_ind = 1
+ 
+order by e.encntr_id, ce.event_end_dt_tm desc
+ 
+head report
+	cnt  = rec->rec_cnt
+ 
+e.encntr_id
+	cnt = cnt + 1
+ 
+	stat = alterlist(rec->list, cnt)
+ 
+ 	rec->rec_cnt = cnt
+ 
+	rec->list[cnt].facility  		= uar_get_code_display(e.loc_facility_cd)
+	rec->list[cnt].unit				= uar_get_code_display(e.loc_nurse_unit_cd)
+	rec->list[cnt].pat_name			= p.name_full_formatted
+	rec->list[cnt].fin				= ea.alias
+	rec->list[cnt].reg_dt			= e.reg_dt_tm
+	rec->list[cnt].encntr_type		= uar_get_code_display(e.encntr_type_cd)
+	rec->list[cnt].ce_event			= ocs.mnemonic ;uar_get_code_display(ce.event_cd)
+	rec->list[cnt].ce_event_tag		= ce.event_tag
+	rec->list[cnt].ce_result		= ce.result_val
+	rec->list[cnt].ce_result_status	= ce.result_status_cd
+	rec->list[cnt].ce_event_dt		= ce.event_end_dt_tm
+	rec->list[cnt].ce_clinsig_dt	= ce.clinsig_updt_dt_tm
+	rec->list[cnt].dosage			= cnvtstring(cmr.admin_dosage)
+	rec->list[cnt].route			= uar_get_code_display(cmr.admin_route_cd)
+	rec->list[cnt].encntr_id		= e.encntr_id
+	rec->list[cnt].person_id		= p.person_id
+	rec->list[cnt].event_id			= ce.event_id
+ 
+ 	if(rec->list[cnt].ce_result_status in (AUTHVERIFIED_VAR, ALTERED_VAR, MODIFIED_VAR)) ;25,34,35
+		rec->list[cnt].dosage = build2(rec->list[cnt].ce_event_tag, " ", rec->list[cnt].route)
+		rec->list[cnt].ce_result = "Given"
+	else
+		rec->list[cnt].ce_result = rec->list[cnt].ce_result
+		rec->list[cnt].dosage = "N/A"
+	endif
+  
 ;call echorecord(rec)
 ;go to exitscript
  

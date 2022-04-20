@@ -27,4 +27,7 @@
 ### 12317 - AMB Global Dot Phrase for Med Refills
 2022-04-05: Initial Development
 Included CRs and Hotfixes
-11669 High-Sensitivity Troponin Automation
+### 11669 High-Sensitivity Troponin Automation
+
+### 12538 COV_SO_FUTURE_LIMIT Rule to Limit Future Order Dates
+2022-04-18: Release

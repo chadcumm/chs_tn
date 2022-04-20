@@ -28,9 +28,9 @@ drop program cov_smart_template_test go
 create program cov_smart_template_test
 
 prompt 
-	"Output to File/Printer/MINE" = "MINE"         ;* Enter or select the printer or file name to send this report to.
+	"Output to File/Printer/MINE" = "MINE"   ;* Enter or select the printer or file name to send this report to.
 	, "FIN" = "2302913670"
-	, "Template" = "cov_amb_protocol_med_refill" 
+	, "Template" = "" 
 
 with OUTDEV, FIN, TEMPLATE
 

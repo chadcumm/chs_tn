@@ -234,10 +234,10 @@ set reply->text =  build2(reply->text,
 	" 5) Is the patient Symptomatic? (via labs or patient report)  (   ) Yes   (   ) No")
 set reply->text =  build2(reply->text,rtf_definitions->st.reol)
 set reply->text =  build2(reply->text,rtf_definitions->st.reol)
-set reply->text =  build2(reply->text," If YES, explain symptoms.")
+set reply->text =  build2(reply->text," If Yes, explain symptoms.")
 set reply->text =  build2(reply->text,rtf_definitions->st.reol)
 set reply->text =  build2(reply->text,rtf_definitions->st.reol)
-set reply->text =  build2(reply->text," If No, consult with provider, Do Not Refill per protocol")
+set reply->text =  build2(reply->text," If Yes, consult with provider, Do Not Refill per protocol")
 
 
 set reply->text =  build2(reply->text,rtf_definitions->st.reol)

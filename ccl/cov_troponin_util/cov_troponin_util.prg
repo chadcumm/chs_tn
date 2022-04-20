@@ -733,7 +733,7 @@ subroutine UpdateCurrentPhase(vCurrentPhase)
 		if (hsTroponin_data->algorithm_info.type = "ED")
 			case (vCurrentPhase)
 				of "INITIAL":	set vReturnPhase = "THREEHOUR"
-				;of "ONEHOUR":	set vReturnPhase = "THREEHOUR"
+				of "ONEHOUR":	set vReturnPhase = "THREEHOUR"
 				of "THREEHOUR": set vReturnPhase = "END"
 			endcase
 		elseif (hsTroponin_data->algorithm_info.type = "INPATIENT")

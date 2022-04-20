@@ -14,7 +14,7 @@
    3 FREETEXT_QUAL[2,2*]
     4 SUBSTANCE_FTDESC=VC10   {darvocet-n}
    */
- 
+/* 
 select into "nl:"
 		 n.nomenclature_id
 		,n.source_identifier
@@ -36,6 +36,7 @@ select into "nl:"
 		 n.source_identifier
 		,n.beg_effective_dt_tm desc
 go
+*/
  
 set link_encntrid = 0.0 go
 set link_personid = 0.0 go

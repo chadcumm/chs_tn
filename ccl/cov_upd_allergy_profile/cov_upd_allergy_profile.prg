@@ -180,6 +180,7 @@ declare j = i2 with noconstant(0), public
 declare i = i2 with noconstant(0), public
 declare k = i2 with noconstant(0), public
 declare h = i2 with noconstant(0), public
+declare r = i2 with noconstant(0), public
  
 set t_rec->curprog = curprog
 ;set t_rec->curprog = "" ;override for dev script
@@ -529,6 +530,7 @@ if (101706request->allergy_cnt > 0)
 	set stat = tdbexecute(600005, 961706, 101706, "REC", 101706request, "REC", 101706reply)
 	;call echorecord(101706reply)
 	set t_rec->return_value = "TRUE"
+	set t_rec->log_message = concat(trim(t_rec->log_message),";","converted allergy to side effect")
 endif
  
  
@@ -650,6 +652,7 @@ if (101706request->allergy_cnt > 0)
 	set stat = tdbexecute(600005, 961706, 101706, "REC", 101706request, "REC", 101706reply)
 	call echorecord(101706reply)
 	set t_rec->return_value = "TRUE"
+	set t_rec->log_message = concat(trim(t_rec->log_message),";","converted side effect to allergy")
 endif
  
 ;end 005
@@ -711,8 +714,74 @@ for (i=1 to 963006reply->allergy_qual)
 					set stat = initrec(101706reply)
 					call echo(build2("--> found locateval return j=",trim(cnvtstring(j))))
 					set t_rec->cur_allergy_qual = 1
+
+					call echo(build2("--->adding coded freetext allergy"))
 					
+					set 101706request->allergy_cnt = (101706request->allergy_cnt + 1)
+					set stat = alterlist(101706request->allergy,101706request->allergy_cnt)
+ 					
+					set 101706request->allergy[101706request->allergy_cnt].allergy_instance_id  = 0;963006reply->allergy[i].allergy_instance_id
+					set 101706request->allergy[101706request->allergy_cnt].allergy_id			= 0;963006reply->allergy[i].allergy_id
+					set 101706request->allergy[101706request->allergy_cnt].encntr_id			= 963006reply->allergy[i].encntr_id
+					set 101706request->allergy[101706request->allergy_cnt].person_id			= t_rec->patient.person_id
+					set 101706request->allergy[101706request->allergy_cnt].reaction_class_cd	= 963006reply->allergy[i].reaction_class_cd
+					set 101706request->allergy[101706request->allergy_cnt].substance_ftdesc		= ""
+					set 101706request->allergy[101706request->allergy_cnt].substance_nom_id
+						= t_rec->conversion.substance_qual[k].substance_nomen_id
+					;set 101706request->allergy[101706request->allergy_cnt].substance_type_cd	= 963006reply->allergy[i].substance_type_cd
+					set 101706request->allergy[101706request->allergy_cnt].substance_type_cd
+						= t_rec->conversion.substance_qual[k].substance_type_cd
+					set 101706request->allergy[101706request->allergy_cnt].onset_dt_tm			= 963006reply->allergy[i].onset_dt_tm
+					set 101706request->allergy[101706request->allergy_cnt].onset_precision_cd	= 963006reply->allergy[i].onset_precision_cd
+					set 101706request->allergy[101706request->allergy_cnt].active_status_cd		= 963006reply->allergy[i].active_status_cd
+					set 101706request->allergy[101706request->allergy_cnt].severity_cd			= 963006reply->allergy[i].severity_cd
+					set 101706request->allergy[101706request->allergy_cnt].source_of_info_cd	= 963006reply->allergy[i].source_of_info_cd
+					set 101706request->allergy[101706request->allergy_cnt].source_of_info_ft	= 963006reply->allergy[i].source_of_info_ft
+					;set 101706request->allergy[101706request->allergy_cnt].updt_id				= 963006reply->allergy[i]
+					set 101706request->allergy[101706request->allergy_cnt].updt_id				= 1.0 ;963006reply->allergy[i].updt_id
+					set 101706request->allergy[101706request->allergy_cnt].reviewed_dt_tm 		= cnvtdatetime(curdate,curtime3)
+					set 101706request->allergy[101706request->allergy_cnt].reviewed_tz 			= 126
+					set 101706request->allergy[101706request->allergy_cnt].reviewed_prsnl_id 	= 1
+					;002 set 101706request->allergy[1].active_ind 								= 1
+					set 101706request->allergy[101706request->allergy_cnt].active_ind 			= 1 ;002
+					;set 101706request->allergy[1].created_prsnl_id = -999
+					set 101706request->disable_inactive_person_ens 								= 1
+					set 101706request->fail_on_duplicate 										= 1
+					set 101706request->allergy[101706request->allergy_cnt].reaction_cnt = size(963006reply->allergy[i].reaction,5)
+					for (r = 1 to size(963006reply->allergy[i].reaction,5))
+						set stat = alterlist(101706request->allergy[101706request->allergy_cnt].reaction,r)
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].reaction_nom_id = 
+							963006reply->allergy[i].reaction[r].reaction_nom_id
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].reaction_ftdesc = 
+							963006reply->allergy[i].reaction[r].reaction_ftdesc
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].active_ind = 
+							963006reply->allergy[i].reaction[r].active_ind
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].active_status_cd = 
+							963006reply->allergy[i].reaction[r].active_status_cd
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].active_status_dt_tm = 
+							963006reply->allergy[i].reaction[r].active_status_dt_tm
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].active_status_prsnl_id = 
+							963006reply->allergy[i].reaction[r].active_status_prsnl_id
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].beg_effective_dt_tm = 
+							963006reply->allergy[i].reaction[r].beg_effective_dt_tm
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].end_effective_dt_tm = 
+							963006reply->allergy[i].reaction[r].end_effective_dt_tm
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].contributor_system_cd = 
+							963006reply->allergy[i].reaction[r].contributor_system_cd
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].data_status_cd = 
+							963006reply->allergy[i].reaction[r].data_status_cd
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].data_status_dt_tm = 
+							963006reply->allergy[i].reaction[r].data_status_dt_tm
+						set 101706request->allergy[101706request->allergy_cnt].reaction[r].data_status_prsnl_id = 
+							963006reply->allergy[i].reaction[r].data_status_prsnl_id
+					endfor
+					call echo("--->request 101706 to add coded allergies")
+					set stat = tdbexecute(600005, 961706, 101706, "REC", 101706request, "REC", 101706reply)
+					set t_rec->log_message = concat(trim(t_rec->log_message),";","added coded allergy")
+										
 					call echo(build2("--->removing original freetext allergy"))
+					set stat = initrec(101706request)
+					set stat = initrec(101706reply)
 					set 101706request->allergy_cnt = (101706request->allergy_cnt + 1)
 					set stat = alterlist(101706request->allergy,101706request->allergy_cnt)
  					
@@ -745,41 +814,9 @@ for (i=1 to 963006reply->allergy_qual)
 					set 101706request->disable_inactive_person_ens 								= 1
 					set 101706request->fail_on_duplicate 										= 1
 					set stat = tdbexecute(600005, 961706, 101706, "REC", 101706request, "REC", 101706reply)
+					set t_rec->log_message = concat(trim(t_rec->log_message),";","removed ft allergy")
 					
-					call echo(build2("--->adding coded freetext allergy"))
-					set stat = initrec(101706request)
-					set stat = initrec(101706reply)
-					set 101706request->allergy_cnt = (101706request->allergy_cnt + 1)
-					set stat = alterlist(101706request->allergy,101706request->allergy_cnt)
- 					
-					set 101706request->allergy[101706request->allergy_cnt].allergy_instance_id  = 0;963006reply->allergy[i].allergy_instance_id
-					set 101706request->allergy[101706request->allergy_cnt].allergy_id			= 0;963006reply->allergy[i].allergy_id
-					set 101706request->allergy[101706request->allergy_cnt].encntr_id			= 963006reply->allergy[i].encntr_id
-					set 101706request->allergy[101706request->allergy_cnt].person_id			= t_rec->patient.person_id
-					set 101706request->allergy[101706request->allergy_cnt].reaction_class_cd	= 963006reply->allergy[i].reaction_class_cd
-					set 101706request->allergy[101706request->allergy_cnt].substance_ftdesc		= ""
-					set 101706request->allergy[101706request->allergy_cnt].substance_nom_id
-						= t_rec->conversion.substance_qual[k].substance_nomen_id
-					;set 101706request->allergy[101706request->allergy_cnt].substance_type_cd	= 963006reply->allergy[i].substance_type_cd
-					set 101706request->allergy[101706request->allergy_cnt].substance_type_cd
-						= t_rec->conversion.substance_qual[k].substance_type_cd
-					set 101706request->allergy[101706request->allergy_cnt].onset_dt_tm			= 963006reply->allergy[i].onset_dt_tm
-					set 101706request->allergy[101706request->allergy_cnt].onset_precision_cd	= 963006reply->allergy[i].onset_precision_cd
-					set 101706request->allergy[101706request->allergy_cnt].active_status_cd		= 963006reply->allergy[i].active_status_cd
-					set 101706request->allergy[101706request->allergy_cnt].severity_cd			= 963006reply->allergy[i].severity_cd
-					set 101706request->allergy[101706request->allergy_cnt].source_of_info_cd	= 963006reply->allergy[i].source_of_info_cd
-					set 101706request->allergy[101706request->allergy_cnt].source_of_info_ft	= 963006reply->allergy[i].source_of_info_ft
-					;set 101706request->allergy[101706request->allergy_cnt].updt_id				= 963006reply->allergy[i]
-					set 101706request->allergy[101706request->allergy_cnt].updt_id				= 1.0 ;963006reply->allergy[i].updt_id
-					set 101706request->allergy[101706request->allergy_cnt].reviewed_dt_tm 		= cnvtdatetime(curdate,curtime3)
-					set 101706request->allergy[101706request->allergy_cnt].reviewed_tz 			= 126
-					set 101706request->allergy[101706request->allergy_cnt].reviewed_prsnl_id 	= 1
-					;002 set 101706request->allergy[1].active_ind 								= 1
-					set 101706request->allergy[101706request->allergy_cnt].active_ind 			= 1 ;002
-					;set 101706request->allergy[1].created_prsnl_id = -999
-					set 101706request->disable_inactive_person_ens 								= 1
-					set 101706request->fail_on_duplicate 										= 1
-					set stat = tdbexecute(600005, 961706, 101706, "REC", 101706request, "REC", 101706reply)
+
 				endif
 			endif
 		endfor
@@ -787,7 +824,7 @@ for (i=1 to 963006reply->allergy_qual)
 endfor
  
 if (101706request->allergy_cnt > 0)
-	call echo("calling request 101706 to update allergies")
+	;call echo("calling request 101706 to update allergies")
 	;call echorecord(101706request)
 	;call echorecord(101706request)
 	;set stat = tdbexecute(600005, 961706, 101706, "REC", 101706request, "REC", 101706reply)
@@ -828,7 +865,7 @@ if ((validate(t_rec)) and (t_rec->return_value = "TRUE"))
 endif
 */
  
-call echorecord(t_rec)
+;call echorecord(t_rec)
 end
 go
  

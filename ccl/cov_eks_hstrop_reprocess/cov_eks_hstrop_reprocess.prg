@@ -147,8 +147,13 @@ else
 	elseif (t_rec->patient.event_id = hsTroponin_data->three_hour.result_event_id)
 		;Updating Three Hour Results
 		call add_log_message("corrected result from three hour")
-		set hsTroponin_data->three_hour.result_val = GetResultbyCEventID(t_rec->patient.clinical_event_id)
-		set updated_result = "THREEHOUR"
+		if (hsTroponin_data->three_hour.result_val = GetResultbyCEventID(t_rec->patient.clinical_event_id))
+			call add_log_message("no change in result, skipping correction")
+			go to exit_script
+		else
+			set hsTroponin_data->three_hour.result_val = GetResultbyCEventID(t_rec->patient.clinical_event_id)
+			set updated_result = "THREEHOUR"
+		endif
 	endif
  
  
@@ -210,7 +215,9 @@ else
  
 		;add the interpretation
 		set hsTroponin_data->algorithm_info.current_interp_id = AddAlgorithmCEResult(context_clinical_event_id)
- 
+ 		;call add_log_message(build2("AddAlgorithmCEDeltaResult=",AddAlgorithmCEDeltaResult(context_clinical_event_id)))
+ 		;call add_log_message(build2("AddAlgorithmCETimeResult=",AddAlgorithmCETimeResult(context_clinical_event_id)))
+		
 		if (hsTroponin_data->algorithm_info.current_interp_id = FALSE)
 			call add_log_message("unable to add one hour interp result to chart")
 			go to exit_script
@@ -268,6 +275,8 @@ else
  
 		;add the interpretation
 		set hsTroponin_data->algorithm_info.current_interp_id = AddAlgorithmCEResult(context_clinical_event_id)
+		;call add_log_message(build2("AddAlgorithmCEDeltaResult=",AddAlgorithmCEDeltaResult(context_clinical_event_id)))
+ 		;call add_log_message(build2("AddAlgorithmCETimeResult=",AddAlgorithmCETimeResult(context_clinical_event_id)))
  
 		if (hsTroponin_data->algorithm_info.current_interp_id = FALSE)
 			call add_log_message("unable to add three hour interp result to chart")
