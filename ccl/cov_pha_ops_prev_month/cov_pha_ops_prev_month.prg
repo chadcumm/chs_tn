@@ -158,7 +158,7 @@ set t_rec->cons.paths.astream	= build("/nfs/middle_fs/to_client_site/"
 ;\\chstn_astream_prod.cernerasp.com\middle_fs\to_client_site\p0665\ClinicalAncillary\Pharmacy\R2W
  
 set t_rec->cons.paths.astream_ccl	= build("/nfs/middle_fs/to_client_site/",trim(cnvtlower(curdomain)),"/CernerCCL/")
-set t_rec->cons.paths.astream = t_rec->cons.paths.astream_ccl
+;set t_rec->cons.paths.astream = t_rec->cons.paths.astream_ccl
  
 set reply->status_data.status = "Z"
  
@@ -1029,27 +1029,27 @@ set t_rec->reports[k].instance_cnt = j
 set stat = alterlist(t_rec->reports[k].instances,j)
 set t_rec->reports[k].instances[j].facility 	= build(^value(^)
 for (i=1 to t_rec->cons.all_facility_cnt)
-	if (t_rec->cons.all_facilities[i].description 		= "LCMC Infusion Clinic - Blount")
-		set t_rec->reports[k].instances[j].facility 	= build(
-																	 t_rec->reports[k].instances[j].facility
-																	,t_rec->cons.all_facilities[i].value
-																)
-	endif
-	if (t_rec->cons.all_facilities[i].description 		= "LCMC Infusion Clinic - Downtown")
-		set t_rec->reports[k].instances[j].facility 	= build(
-																	t_rec->reports[k].instances[j].facility
-																	,","
-																	,t_rec->cons.all_facilities[i].value
-																)
-	endif
 	if (t_rec->cons.all_facilities[i].description 		= "FSR Infusion Clinic - Lenoir City")
 		set t_rec->reports[k].instances[j].facility 	= build(
 																	t_rec->reports[k].instances[j].facility
-																	,","
 																	,t_rec->cons.all_facilities[i].value
 																)
 	endif
 	if (t_rec->cons.all_facilities[i].description 		= "FSR Infusion Clinic - Oak Ridge")
+		set t_rec->reports[k].instances[j].facility 	= build(
+																	t_rec->reports[k].instances[j].facility
+																	,","
+																	,t_rec->cons.all_facilities[i].value
+																)
+	endif
+	if (t_rec->cons.all_facilities[i].description 		= "LCMC Infusion Clinic - Blount")
+		set t_rec->reports[k].instances[j].facility 	= build(
+																	 t_rec->reports[k].instances[j].facility
+																	,","
+																	,t_rec->cons.all_facilities[i].value
+																)
+	endif
+	if (t_rec->cons.all_facilities[i].description 		= "LCMC Infusion Clinic - Downtown")
 		set t_rec->reports[k].instances[j].facility 	= build(
 																	t_rec->reports[k].instances[j].facility
 																	,","
@@ -1074,7 +1074,7 @@ endfor
 set t_rec->reports[k].instances[j].facility 	= build(t_rec->reports[k].instances[j].facility,^)^)
 set t_rec->reports[k].instances[j].params 		= t_rec->reports[k].param_template
 set t_rec->reports[k].instances[j].filename		= build(
-																 cnvtlower("INF")
+																 cnvtlower("TOG")
 																,"_"
 																,cnvtlower(t_rec->reports[k].object)
 																,"_ccl"
@@ -2469,27 +2469,27 @@ set t_rec->reports[k].instance_cnt = j
 set stat = alterlist(t_rec->reports[k].instances,j)
 set t_rec->reports[k].instances[j].facility 	= build(^value(^)
 for (i=1 to t_rec->cons.all_facility_cnt)
-	if (t_rec->cons.all_facilities[i].description 		= "LCMC Infusion Clinic - Blount")
-		set t_rec->reports[k].instances[j].facility 	= build(
-																	 t_rec->reports[k].instances[j].facility
-																	,t_rec->cons.all_facilities[i].value
-																)
-	endif
-	if (t_rec->cons.all_facilities[i].description 		= "LCMC Infusion Clinic - Downtown")
-		set t_rec->reports[k].instances[j].facility 	= build(
-																	t_rec->reports[k].instances[j].facility
-																	,","
-																	,t_rec->cons.all_facilities[i].value
-																)
-	endif
 	if (t_rec->cons.all_facilities[i].description 		= "FSR Infusion Clinic - Lenoir City")
 		set t_rec->reports[k].instances[j].facility 	= build(
 																	t_rec->reports[k].instances[j].facility
-																	,","
 																	,t_rec->cons.all_facilities[i].value
 																)
 	endif
 	if (t_rec->cons.all_facilities[i].description 		= "FSR Infusion Clinic - Oak Ridge")
+		set t_rec->reports[k].instances[j].facility 	= build(
+																	t_rec->reports[k].instances[j].facility
+																	,","
+																	,t_rec->cons.all_facilities[i].value
+																)
+	endif
+	if (t_rec->cons.all_facilities[i].description 		= "LCMC Infusion Clinic - Blount")
+		set t_rec->reports[k].instances[j].facility 	= build(
+																	 t_rec->reports[k].instances[j].facility
+																	 ,","
+																	,t_rec->cons.all_facilities[i].value
+																)
+	endif
+	if (t_rec->cons.all_facilities[i].description 		= "LCMC Infusion Clinic - Downtown")
 		set t_rec->reports[k].instances[j].facility 	= build(
 																	t_rec->reports[k].instances[j].facility
 																	,","
@@ -2514,7 +2514,7 @@ endfor
 set t_rec->reports[k].instances[j].facility 	= build(t_rec->reports[k].instances[j].facility,^)^)
 set t_rec->reports[k].instances[j].params 		= t_rec->reports[k].param_template
 set t_rec->reports[k].instances[j].filename		= build(
-																 cnvtlower("INF")
+																 cnvtlower("TOG")
 																,"_"
 																,cnvtlower(t_rec->reports[k].object)
 																,"_ccl"
@@ -3257,7 +3257,7 @@ call writeLog(build2("**********************************************************
 call writeLog(build2("* START Executing Each Report Instance *********************"))
 for (k=1 to t_rec->cnt)
 	for (j=1 to t_rec->reports[k].instance_cnt)
-		;if (k in(6)) ;remove after testing, this will limit the extract to running just one report
+	 ;if (k in(1,2,3,4,5,7)) ;remove after testing, this will limit the extract to running just one report
 		set t_rec->reports[k].instances[j].ccl_command = build2(
 																	 "execute "
 																	,t_rec->reports[k].object
@@ -3281,7 +3281,7 @@ for (k=1 to t_rec->cnt)
 					,size(trim(t_rec->reports[k].instances[j].astream_copy_command))
 					,t_rec->dclstat)
 		call writeLog(build2("Finished astream_copy_command dcl"))
-		;endif
+	 ;endif
 	endfor
 endfor
  

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Template EKS Alert Tempate</title>
+<meta name="discernadvisor" content="CCLEKSREPLYOBJECT,CCLLINK,CCLNEWWINDOW,CCLEVENT,MPAGES_EVENT,APPLINK,XMLCCLREQUEST">
+<meta http-equiv="x-ua-compatible" content="IE=edge" />
+ 
+<link rel="stylesheet" type="text/css" href="I:/Winintel/static_content/custom_mpage_content/eks/css/cov_standard_lib.css"></style>
+ 
+<script language="javascript">
+	var patientDataSplit = "@MESSAGE:[PATIENTDATA]";
+</script>
+ 
+<script type="text/javascript" src="I:/Winintel/static_content/custom_mpage_content/jquery/jquery-current.js"></script>
+<script type="text/javascript" src="I:/Winintel/static_content/custom_mpage_content/eks/js/cov_standard_lib.js"></script>
+ 
+</head>
+<body onload='InitMain();'>
+<div id=patientBannerBar onload="BuildPatientBannerBar()"></div>
+@OPT_FREETEXT_PARAM
+<pre>
+@reply_record_param
+</pre>
+</body>
+</html>

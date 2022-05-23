@@ -4,7 +4,6 @@
 <title>Template EKS Notify Tempate</title>
 <meta name="discern" content="CCLLINK,CCLNEWWINDOW,CCLEVENT,MPAGES_EVENT,APPLINK,XMLCCLREQUEST">
 <meta http-equiv="x-ua-compatible" content="IE=edge" />
-<meta name="filename" content="cov_troponin_util_notify.html">
  
 <link rel="stylesheet" type="text/css" href="I:/Winintel/static_content/custom_mpage_content/eks/css/cov_standard_lib.css"></style>
  
@@ -15,24 +14,24 @@
 <script type="text/javascript" src="I:/Winintel/static_content/custom_mpage_content/jquery/jquery-current.js"></script>
 <script type="text/javascript" src="I:/Winintel/static_content/custom_mpage_content/eks/js/cov_standard_lib.js"></script>
  
+<script language="javascript">
+ 
+ 
+	function closeNotify() {
+	      javascript:CCLEVENT("EVENT_NOTIFY_DELETE", "");
+	}
+ 
+ 
+</script>
+ 
 </head>
 <body onload='InitMain();'>
 <div id=patientBannerBar onload="BuildPatientBannerBar()"></div>
-<br>
-<table>
-<tr>
-	<td>Accession:</td>
-	<td>%%ACCESSION%%</td>
-</tr>
-</table>
-<br>
-<b>
-The delta for this hs Troponin result is considered critical.  You must call and document the called results.
-</b>
-<br><br>
-The most recent hs Troponin result of %%RESULT_VALUE%% ng/L produced a delta of %%DELTA_VALUE%%.
-Abnormal delta change consistent with acute myocardial injury [0-3 hr: &ge;7 ng/L; 0-6 hr: &ge;9 ng/L]. You must add a
-Result Comment or note associated with this result.
-<br><br>
+ A Baby Dynamic Group has been added in iView on this patient instead of Adding a Pregnancy as the first step.
+ Please resolve by navigating to the proper workflow page to Add a Pregnancy.
+ <br><br>
+ <input type="button" value="Acknowledge and Remove Message" onclick="closeNotify();" />
 </body>
 </html>
+ 
+ 

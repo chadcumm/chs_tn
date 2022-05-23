@@ -338,6 +338,7 @@ subroutine AddAlgorithmCEDeltaResult(vCEventID)
 	
  	declare vhtml_output = vc with protect
  	declare vUsername = vc with protect
+ 	declare vAccession = vc with protect
  	declare vVerifiedPrsnlID = f8 with protect
  	
 	if (validate(hsTroponin_data) = FALSE)
@@ -425,7 +426,9 @@ subroutine AddAlgorithmCEDeltaResult(vCEventID)
 			
 		 	if (hsTroponin_data->algorithm_info.current_delta >= 7)
 				set vhtml_output = get_html_template("cov_troponin_util_notify.html")
+ 				
  				set vUsername = sGetUsername(vVerifiedPrsnlID)
+ 				set vAccession = trim(GetOrderAccessionbyOrderID(hsTroponin_data->three_hour.order_id))
  				
  				set vhtml_output = add_patientdata(cerequest->clin_event.person_id,cerequest->clin_event.encntr_id,vhtml_output)
 
@@ -441,9 +444,20 @@ subroutine AddAlgorithmCEDeltaResult(vCEventID)
  													,"%%RESULT_VALUE%%"
  													,cnvtstring(hsTroponin_data->algorithm_info.current_result_val)
  													)	
- 																						
+ 				
+ 				set vhtml_output = replace_html_token(
+ 													 vhtml_output
+ 													,"%%ACCESSION%%"
+ 													,vAccession
+ 													)
+ 																														
  				call echo(build2("vhtml_output=",vhtml_output))  
- 				set stat = send_discern_notification(vUsername,"Critical Troponin HS Result",vhtml_output)
+ 				
+ 				set stat = send_discern_notification(
+ 														vUsername
+ 														,concat("Critical Troponin HS Result - ",vAccession)
+ 														,vhtml_output
+ 													)
 		 	endif 	
 		 	
 		else

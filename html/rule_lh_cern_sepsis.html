@@ -1,0 +1,138 @@
+<html>
+<head><title>Rapid Response Early Warning Alert</title>
+<meta name="discern" content="CCLLINK,CCLNEWWINDOW,CCLEVENT,MPAGES_EVENT,APPLINK" >
+<script language="javascript">
+ 
+var patientDataSplit = "@MESSAGE:[PATIENTDATA]";
+var patientData = patientDataSplit.split("|");
+var patientID = patientData[0];
+var encounterID = patientData[1];
+var patientName = patientData[2];
+var patientNurseUnit = patientData[3];
+var patientRoom = patientData[4];
+var medicalNumber = patientData[5];
+var patientAge = patientData[6]
+var patientFacility = patientData[7];
+var patientBirthDate = patientData[8];
+var currentDate = patientData[9];
+ 
+var formID = "@MESSAGE:[FORM_ID]";
+var activityID = "0";
+var rrtMessage = "@MESSAGE:[ALERT_MESSAGE]";
+var sirsDataSplit = "@MESSAGE:[SIRS CRITERIA]";
+var organDataSplit = "@MESSAGE:[ORGAN DYSFUNCTION]";
+var sirsData = sirsDataSplit.split("|");
+var organData = organDataSplit.split("|");
+function buildSirsOrgan() {
+ 
+	var tableBodySirs= "<table id='sirsTbl' width='100.000%' >";
+ 
+	for(var i = 0; i < sirsData.length; i++)
+		tableBodySirs+= "<tr><td width='100.00%' class='RowTypeWhite' colspan='3'>" + sirsData[i] + "</td></tr>";
+ 
+	tableBodySirs += "</table>";
+ 
+	document.getElementById('sirsTbl').outerHTML = tableBodySirs;
+ 
+  if(organDataSplit.length > 0){
+	var tableBodyOrgan= "<table id='organTbl' width='100.000%' >";
+ 
+	for(var i = 0; i < organData.length; i++)
+		tableBodyOrgan+= "<tr><td width='100.00%' class='RowTypeWhite' colspan='3'>" + organData[i] + "</td></tr>";
+ 
+	tableBodyOrgan += "</table>";
+ 
+	document.getElementById('organTbl').outerHTML = tableBodyOrgan;
+ 
+  }
+ 
+}
+ 
+function fillInPatientBanner() {
+ 
+                                if (patientName.substring(0,1) != "@"){
+                                                document.getElementById('patient').innerHTML = patientName;
+                                }
+ 
+                                if (patientAge.substring(0,1) != "@"){
+                                                document.getElementById('age').innerHTML = patientAge;
+                                }
+ 
+                                if (patientBirthDate.substring(0,1) != "@") {
+                                                document.getElementById('birthDate').innerHTML = patientBirthDate;
+                                }
+ 
+                                if (patientNurseUnit.substring(0,1) != "@") {
+                                                document.getElementById('loc').innerHTML = patientNurseUnit + " ; " + patientRoom;
+                                }
+ 
+                                if (medicalNumber.substring(0,1) != "@") {
+                                                document.getElementById('mrn').innerHTML = medicalNumber;
+                                }
+                                if (rrtMessage.length > 0) {
+												document.getElementById('instructions').innerHTML = rrtMessage;
+								}
+							 	else {
+ 
+								}
+								buildSirsOrgan();
+ 
+ 
+}//close fillPatientBanner
+ 
+function buildPowerformLink() {
+ 			var form_params = patientID + "|" + encounterID + "|" + formID + "|" + activityID + "|0";
+        MPAGES_EVENT("POWERFORM",form_params);
+                            
+                        
+}
+</script>
+ 
+ </head>
+ 
+<BODY style='overflow:auto;' onload="javascript:fillInPatientBanner();">
+   <style>
+  p#instructions {
+    color: red;
+    font-size: 125%;
+}
+li {
+	background-color: red;
+	color: black;
+	font-size: 150%;
+	list-style-type:circle;
+}
+</style>
+<table width='100%' height='10%' style='background-color:gainsboro;border-collapse:collapse;'>
+                <tr>
+                                <td width='33.00%'><b>NAME:  </b><span id='patient'></span></td>
+                                <td width='33.00%'><b>DOB:  </b><span id='birthDate'></span></td>
+                                <td width='33.00%'><b>MRN:  </b><span id='mrn'></span></td>
+                </tr>
+                <tr>
+                                <td width='33.00%'><b>LOCATION:  </b><span id='loc'></span>
+                                <td width='33.00%'><b>AGE:  </b><span id='age'></span></td>
+                </tr>
+</table>
+<br>
+<input type="button" id= "PButton" style="float:left;background-color:yellow;font-size:14pt" value="Document Sepsis Action" onclick="buildPowerformLink();" />
+<br><br><br>
+ 
+<div id="message1">
+ 
+<b><p id="instructions"></p><b>
+<br>
+<b><u>SIRS Criteria</u></b>
+<b><p id="sirsTbl"></p><b>
+<b><u>Organ Dysfunction</u></b>
+<b><p id="organTbl"></p><b>
+<b><p style="background-color:white;color:black;font-size: 125%;">Assess patient to determine alert response. </p>
+<div id='AdmitI' width='50.00%' height='5.00%' style='display:inline;visibility:visible;'>
+ 
+ 
+</div> <!---Close noAdmitOrder--->
+ 
+</BODY>
+ 
+</HTML>
+ 

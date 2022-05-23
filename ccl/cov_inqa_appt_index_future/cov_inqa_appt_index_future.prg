@@ -550,7 +550,7 @@ plan cv
 							,"PBL LCG"
 							,"PBLH KCG"
 							,"PBH OMG"
-							,"TOG DOWNTOWN" 
+							;,"TOG DOWNTOWN" 
 						)
 	and	 cv.active_ind = 1
 order by

@@ -1,0 +1,4 @@
+execute cov_consult_order_audit
+;"MINE", "30-MAR-2022 00:00:00", "30-MAR-2022 23:59:00", 0, VALUE(1399.00), VALUE(2552503639.00)
+"MINE", "01-MAR-2022 00:00:00", "30-MAR-2022 23:59:00", 0, VALUE(1.0), VALUE(1.0)
+go

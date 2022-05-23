@@ -35,8 +35,8 @@ with OUTDEV
  
  
 call echo(build("loading script:",curprog))
-set nologvar = 0	;do not create log = 1		, create log = 0
-set noaudvar = 0	;do not create audit = 1	, create audit = 0
+set nologvar = 1	;do not create log = 1		, create log = 0
+set noaudvar = 1	;do not create audit = 1	, create audit = 0
 %i ccluserdir:cov_custom_ccl_common.inc
  
 call writeLog(build2("************************************************************"))

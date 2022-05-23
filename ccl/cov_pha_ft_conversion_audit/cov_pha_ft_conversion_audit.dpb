@@ -1,0 +1,100 @@
+<prompt-def program = 'COV_RPT_OP_READINESS' group = '0' auto-arrange = 'true' stream-ver = '0' export-dt-tm = '202009020955' version = '39' script-enabled = 'true' prompt-control-version = '3.000000' updt_dt_tm = '07/14/2020 12:58:08' resource-enabled = 'false'><control name = 'OUTDEV' control = '6' height = '30' width = '150' position = '0' result-type = '1' exclude = 'false'><display align = 'left'>Output to File/Printer/MINE</display>
+<description></description>
+<default>MINE</default>
+<component name = 'CWizOutputDevice'><property name = 'OUTPUT-DEVICES:00'><![CDATA[HIDE-BROWSER='false' DEVICES='' DISPLAY-ALL='true' DISALLOW-FREETEXT='false'                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ]]></property>
+</component>
+<component name = 'GENERAL'><property name = 'PROGRAM'><![CDATA[PROMPT-CONTROL-VERSION='3.000000' AUTO-ARRANGE='true' OWNER='' DU-BASE-HORZ='8' VERSION='39' STREAM-VER='0' REPORT-NAME='' UPDT_DT_TM='07/14/2020 12:58:08' DU-BASE-VERT='16' SCRIPT-ENABLED='true'                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ]]></property>
+<property name = 'PROMPT'><![CDATA[REQUIRED='false' CTRL-VERT-OFFSET='' BOTTOM='30' HIDE-LABEL='false' AUTO-GROUP='false' BORDER='false' LABEL-POS-LEFT='10' LEFT='160' CTRL-WIDTH='150' LABEL-POS-TOP='10' CTRL-TOP='' EXCLUDE-RUNTIME='false' CTRL-HEIGHT='30' RESIZABLE='false' RIGHT='150' LABEL-POS-HEIGHT='13' CTRL-HORZ-OFFSET='' TOP='10' LABEL-LEFT='true' CTRL-LEFT='' LABEL-POS-WIDTH='130' TRIM='false' ]]></property>
+</component>
+<component name = 'JAVASCRIPT'><property name = 'CODE:00'><![CDATA[var theForm = null;
+
+function onLoad() {
+
+    theForm = new DiscernForm();
+    //theForm.FACILITY.visible = false;
+    theForm.ALL_FACILITIES.onChange = changeFACILITIES;
+
+}
+
+function changeFACILITIES(sender) {
+
+  if (theForm.ALL_FACILITIES.value == 1){
+
+    theForm.FACILITY.selectAll(1);
+
+    }
+
+    if (theForm.ALL_FACILITIES.value == 0){
+    
+    theForm.FACILITY.selectAll(0);
+
+    }
+
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         ]]></property>
+</component>
+</control>
+<control name = 'ALL_FACILITIES' control = '1' height = '18' width = '14' position = '1' result-type = '3' exclude = 'false'><display align = 'left'>Include All Facilities</display>
+<description></description>
+<default>0</default>
+<component name = 'CHECKBOX'><property name = 'CHK-SETTINGS'><![CDATA[CHECKED='1' UNCHECKED='0' INIT-STATE='false'                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ]]></property>
+</component>
+<component name = 'GENERAL'><property name = 'PROMPT'><![CDATA[CTRL-VERT-OFFSET='' REQUIRED='false' HIDE-LABEL='false' BOTTOM='18' BORDER='false' AUTO-GROUP='false' LABEL-POS-LEFT='10' LABEL-POS-TOP='47' CTRL-WIDTH='' LEFT='160' CTRL-TOP='' EXCLUDE-RUNTIME='false' CTRL-HEIGHT='' RESIZABLE='false' RIGHT='14' CTRL-HORZ-OFFSET='' LABEL-POS-HEIGHT='13' LABEL-LEFT='true' TOP='47' TRIM='false' LABEL-POS-WIDTH='92' CTRL-LEFT='' ]]></property>
+</component>
+</control>
+<control name = 'FACILITY' control = '3' height = '125' width = '200' position = '2' result-type = '3' exclude = 'false'><display align = 'left'>Facilitiy</display>
+<description></description>
+<default></default>
+<component name = 'CWizDataSource'><property name = 'DATASRC:00'><![CDATA[MODIFIABLE='false' SORT='false' INC-ANY='false' DUAL-LIST='true' KEEP-SELECTION='true' DB-EXE='SCRIPT' LABEL-COLUMNS='false' QBE-SOURCE='' MULTI-SELECT='true' SOURCE-TYPE='DATABASE' MULTI_COLUMN='false'                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ]]></property>
+<property name = 'DEFAULT-VALUES:00'><![CDATA[MULTI-DEF-COUNT='0'                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ]]></property>
+<property name = 'SETTINGS:00'><![CDATA[DEFAULT-KEY='' QUERY-STRING='select
+     location &#061; trim(uar_get_code_display(l.location_cd))
+    ,l.location_cd
+from
+     location   l
+    ,organization   o
+    ,code_value_set cvs
+    ,code_value cv1
+    ,code_value cv2
+plan cvs
+    where cvs.definition            &#061; "COVCUSTOM"
+join cv1
+    where cv1.code_set              &#061; cvs.code_set
+    and   cv1.definition            &#061; trim(cnvtlower("cov_rpt_op_readiness"))   
+    and   cv1.active_ind            &#061; 1
+    and   cv1.begin_effective_dt_tm <&#061; cnvtdatetime(curdate,curtime3)
+    and   cv1.end_effective_dt_tm   >&#061; cnvtdatetime(curdate,curtime3)
+    and   cv1.cdf_meaning           &#061; "FACILITY"
+join l 
+    where   l.location_type_cd      &#061; value(uar_get_code_by("MEANING",222,"FACILITY"))
+    and     l.active_ind            &#061; 1
+join cv2
+    where   cv2.code_value          &#061; l.location_cd
+    and     cv2.display             &#061; cv1.display
+join o 
+    where ]]></property>
+<property name = 'SETTINGS:01'><![CDATA[o.organization_id         &#061; l.organization_id
+order by
+    location
+' QUERY-OPTIONS='1067' COLUMNS='&#123;TABLE&#061;&#034;&#034; ORDINAL&#061;&#034;0&#034; VISIBLE&#061;&#034;true&#034; COLUMN&#061;&#034;0&#034; ALIAS&#061;&#034;&#034; FORMAT&#061;&#034;&#034; WIDTH&#061;&#034;74.000000&#034; TYPE&#061;&#034;&#034; VALUE&#061;&#034;false&#034; BINDING&#061;&#034;LOCATION&#034; TITLE&#061;&#034;LOCATION&#034; &#125;&#123;TABLE&#061;&#034;&#034; ORDINAL&#061;&#034;1&#034; VISIBLE&#061;&#034;false&#034; COLUMN&#061;&#034;1&#034; ALIAS&#061;&#034;&#034; FORMAT&#061;&#034;&#034; WIDTH&#061;&#034;2040.000000&#034; TYPE&#061;&#034;&#034; VALUE&#061;&#034;true&#034; BINDING&#061;&#034;LOCATION_CD&#034; TITLE&#061;&#034;LOCATION_CD&#034; &#125;'                                                                                                                                                                                                                                                     ]]></property>
+</component>
+<component name = 'GENERAL'><property name = 'PROMPT'><![CDATA[CTRL-VERT-OFFSET='' REQUIRED='false' HIDE-LABEL='false' BOTTOM='125' BORDER='false' AUTO-GROUP='false' LABEL-POS-LEFT='10' LABEL-POS-TOP='72' CTRL-WIDTH='200' LEFT='160' CTRL-TOP='' EXCLUDE-RUNTIME='false' CTRL-HEIGHT='125' RESIZABLE='false' RIGHT='200' CTRL-HORZ-OFFSET='' LABEL-POS-HEIGHT='13' LABEL-LEFT='true' TOP='72' TRIM='false' LABEL-POS-WIDTH='34' CTRL-LEFT='' ]]></property>
+</component>
+</control>
+<control name = 'REPORT_OPTION' control = '2' height = '25' width = '250' position = '3' result-type = '3' exclude = 'false'><display align = 'left'>Report Option</display>
+<description></description>
+<default></default>
+<component name = 'CWizDataSource'><property name = 'DATASRC:00'><![CDATA[MODIFIABLE='false' SORT='false' INC-ANY='false' DUAL-LIST='false' KEEP-SELECTION='false' LABEL-COLUMNS='false' QBE-SOURCE='' MULTI-SELECT='false' STR-DEFAULT='' SOURCE-TYPE='STRING' MULTI_COLUMN='false'                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ]]></property>
+<property name = 'STRING-TABLE:00'><![CDATA[{0	Full Detail Report}{1	NHSN Summary}{2	NHSN Detail}{3	HRTS Summary}{4	HRTS Detail}{6	Tele-Tracking Summary}{7	Tele-Tracking Detail}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   ]]></property>
+<property name = 'TABLE-HEADER:00'><![CDATA[{TABLE='' ORDINAL='0' VISIBLE='false' COLUMN='0' ALIAS='' FORMAT='' WIDTH='0.000000' TYPE='' VALUE='true' BINDING='A' TITLE='A' }{TABLE='' ORDINAL='1' VISIBLE='true' COLUMN='1' ALIAS='' FORMAT='' WIDTH='0.000000' TYPE='' VALUE='false' BINDING='B' TITLE='B' }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      ]]></property>
+</component>
+<component name = 'GENERAL'><property name = 'PROMPT'><![CDATA[REQUIRED='false' CTRL-VERT-OFFSET='' BOTTOM='25' HIDE-LABEL='false' AUTO-GROUP='false' BORDER='false' LABEL-POS-LEFT='10' LEFT='160' CTRL-WIDTH='' LABEL-POS-TOP='204' CTRL-TOP='' EXCLUDE-RUNTIME='false' CTRL-HEIGHT='' RESIZABLE='false' RIGHT='250' LABEL-POS-HEIGHT='13' CTRL-HORZ-OFFSET='' TOP='204' LABEL-LEFT='true' CTRL-LEFT='' LABEL-POS-WIDTH='66' TRIM='false' ]]></property>
+</component>
+</control>
+<program-info><![CDATA[{\rtf1\ansi\ansicpg1252\uc0\deff0{\fonttbl
+{\f0\froman\fcharset0\fprq2 Times;}
+{\f1\froman\fcharset0\fprq2 Times New Roman;}
+{\f2\froman\fcharset2\fprq2 Symbol;}}
+{\colortbl;\red0\green0\blue0;\red255\green255\blue255;\red255\green255\blue255;\red0\green128\blue128;}
+{\info{\comment TX_RTF32 9.0.310.500}}
+\deftab720\trowd\trgaph80\trleft-80\clvertalt\clbrdrb\brdrs\brdrw10\clcbpat4\cellx2337\clvertalt\clbrdrb\brdrs\brdrw10\clcbpat4\cellx7182\clvertalt\clbrdrb\brdrs\brdrw10\clcbpat4\cellx9468\pard\widctlpar\intbl\pard\intbl\plain\f0\fs28\cell\pard\intbl\qc\plain\f0\fs48\cf3 Discern Explorer\plain\f1\fs28\par\plain\f0\fs28\cf3 Prompt Documentation\plain\f1\fs28\cell\pard\intbl\plain\f0\fs28\cell\intbl\row\pard\trowd\trgaph80\trleft-80\clvertalt\clbrdrl\brdrs\brdrw10\clbrdrt\brdrs\brdrw10\clcbpat3\cellx2337\clvertalt\clbrdrt\brdrs\brdrw10\clcbpat3\cellx7182\clvertalt\clbrdrt\brdrs\brdrw10\clbrdrr\brdrs\brdrw10\clcbpat3\cellx9468\pard\widctlpar\intbl\pard\intbl\cell\pard\intbl\qc \{INSERT-GROUP-NAME\}\cell\pard\intbl\cell\intbl\row\pard\trowd\trgaph108\trleft-108\clvertalt\clbrdrl\brdrs\brdrw10\clbrdrb\brdrs\brdrw10\clcbpat3\cellx2337\clvertalt\clbrdrb\brdrs\brdrw10\clcbpat3\cellx7182\clvertalt\clbrdrr\brdrs\brdrw10\clbrdrb\brdrs\brdrw10\clcbpat3\cellx9468\pard\widctlpar\intbl\pard\intbl\plain\f0\fs20 Modified: %%mod-dt%%\par By: %%mod-user%%\cell\pard\intbl\qc\cell\pard\intbl Printed: %%cur-dt%%\cell\intbl\row\pard\pard\plain\f0\fs28 Program Information For\plain\f1\fs28  :  \plain\f0\fs28\i %%prg-name%%\plain\f1\fs20\par\par\plain\f0\fs24\b Program Description\plain\f1\fs24\b :\plain\f1\fs24  \plain\f1\fs24\i \{INSERT THE PROGRAMS PURPOSE HERE!!.\}\plain\f1\fs24\par\plain\f1\fs20\par\par\par\plain\f1\fs20\b Written By:\plain\f1\fs20  %%author%%\tab\tab\plain\f1\fs20\b Date :\plain\f1\fs20  %%create-dt%%\par\plain\f0\fs20\par\pard\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876 %%prompt-begin%%\par\trowd\trgap      h0\trleft0\clvertalt\clcbpat4\cellx1468\clvertalt\clbrdrb\brdrs\brdrw10\clcbpat4\cellx9360\pard\widctlpar\intbl\pard\intbl\ri432\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876\plain\f0\fs20\cf3 Field #, %%ctrl-position%%\plain\f0\fs20\b\cell\pard\intbl\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876\plain\f0\fs20\cf3 %%ctrl-display%%\plain\f0\fs20\b\cell\intbl\row\pard\trowd\trgaph30\trleft432\clvertalt\cellx2188\clvertalt\cellx9360\pard\widctlpar\intbl\pard\intbl\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876 Short Description\plain\f0\fs20\cell : %%ctrl-status%%\cell\intbl\row\pard\trowd\trgaph30\trleft432\clvertalt\cellx2188\clvertalt\cellx9360\pard\widctlpar\intbl\pard\intbl\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876\plain\f0\fs20\b Description\plain\f0\fs20\cell : \plain\f0\fs20\i \{Insert your description here!!\}\plain\f0\fs20\cell\intbl\row\pard\trowd\trgaph30\trleft432\clvertalt\cellx2188\clvertalt\cellx9360\pard\widctlpar\intbl\pard\intbl\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876\cell\cell\intbl\row\pard\trowd\trgaph30\trleft432\clvertalt\cellx2188\clvertalt\cellx9360\pard\widctlpar\intbl\pard\intbl\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876\plain\f0\fs20\b Default\plain\f0\fs20\cell : %%ctrl-default%%\cell\intbl\row\pard\trowd\trgaph30\trleft432\clvertalt\cellx2188\clvertalt\cellx9360\pard\widctlpar\intbl\pard\intbl\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876\plain\f0\fs20\b Control Type\plain\f0\fs20\cell : %%ctrl-control%%\cell\intbl\row\pard\trowd\trgaph30\trleft432\clvertalt\cellx2188\clvertalt\cellx9360\pard\widctlpar\intbl\pard\intbl\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876\plain\f0\fs20\b Type\plain\f0\fs20\cell : %%ctrl-type%%\cell\intbl\row\pard\trowd\trgaph30\trleft432\clvertalt\cellx2188\clvertalt\cellx9360\pard\widctlpar\intbl\pard\intbl\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876\plain\f0\fs20\b Name\plain\f0\fs20\cell : %%ctrl-name%%\cell\intbl\row\pard\pard\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876\par %%prompt-end%%\par\par\par\trowd\trgaph30\trleft0\clvertalt\clbrdrt\brdrs\brdrw10\cellx9360\pard\widctlpar\intbl\pard\intbl\qc\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876 End of Document\cell\intbl\row\pard\pard\tx374\tx2268\tx3402\tx4536\tx5670\tx6804\tx7938\tx9072\tx10206\tx11340\tx12474\tx13608\tx14742\tx15876\par }]]></program-info>
+</prompt-def>
