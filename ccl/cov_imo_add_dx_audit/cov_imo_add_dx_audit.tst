@@ -71,7 +71,7 @@ execute VCCL_RUN_PROGRAM go
 */
 
 set debug_ind = 1 go 
-execute cov_imo_add_dx_audit "MINE"  go
+execute cov_imo_add_dx_audit "MINE","25-MAY-2022 00:00:00","01-APR-2023 00:00:00"  go
  
  
  
