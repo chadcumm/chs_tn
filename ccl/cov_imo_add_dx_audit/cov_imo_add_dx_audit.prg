@@ -214,7 +214,7 @@ head d.diagnosis_id
 	t_rec->qual[t_rec->cnt].diag_qual[i].provider_id = d.diag_prsnl_id
 	
 	t_rec->qual[t_rec->cnt].diag_qual[i].ccm_map_ind = ccm.cmt_cross_map_id
-	t_rec->qual[t_rec->cnt].diag_qual[i].diag_priority = d.diag_priority
+	t_rec->qual[t_rec->cnt].diag_qual[i].diag_priority = d.clinical_diag_priority
 foot d.encntr_id
 	t_rec->qual[t_rec->cnt].diag_cnt = i
 with nocounter,outerjoin=d1,outerjoin=d2,outerjoin=d3
