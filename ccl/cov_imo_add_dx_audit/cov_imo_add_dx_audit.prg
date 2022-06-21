@@ -31,9 +31,10 @@ create program cov_imo_add_dx_audit:dba
 prompt 
 	"Output to File/Printer/MINE" = "MINE"
 	, "Start Date and Time" = "SYSDATE"
-	, "End Date and Time" = "SYSDATE" 
+	, "End Date and Time" = "SYSDATE"
+	, "FIN (Optional)" = "" 
 
-with OUTDEV, START_DT_TM, END_DT_TM
+with OUTDEV, START_DT_TM, END_DT_TM, FIN
  
  
 call echo(build("loading script:",curprog))
@@ -69,6 +70,7 @@ record t_rec
 	 2 outdev		= vc
 	 2 start_dt_tm	= vc
 	 2 end_dt_tm	= vc
+	 2 fin			= vc
 	1 files
 	 2 records_attachment		= vc
 	1 dminfo
@@ -77,6 +79,9 @@ record t_rec
 	1 cons
 	 2 run_dt_tm 	= dq8
 	 2 outdev 		= vc
+	 2 fin 			= vc
+	 2 encntr_id	= f8
+	 2 encntr_parser = vc
 	1 dates
 	 2 start_dt_tm	= dq8
 	 2 end_dt_tm	= dq8
@@ -119,6 +124,7 @@ set t_rec->files.records_attachment = concat(trim(cnvtlower(curprog)),"_rec_",tr
 set t_rec->prompts.outdev = $OUTDEV
 set t_rec->prompts.start_dt_tm = $START_DT_TM
 set t_rec->prompts.end_dt_tm = $END_DT_TM
+set t_rec->prompts.fin = $FIN
 
 if (program_log->run_from_ops = 1)
 	set t_rec->dminfo.info_domain	= "COV_DEV_OPS"
@@ -137,6 +143,25 @@ endif
  
 set t_rec->cons.run_dt_tm 		= cnvtdatetime(curdate,curtime3)
 set t_rec->cons.outdev 			= t_rec->prompts.outdev
+set t_rec->cons.fin 			= t_rec->prompts.fin
+
+
+select into "nl:"
+from
+	encntr_alias ea 
+plan ea
+	where ea.alias = t_rec->cons.fin
+	and   ea.active_ind = 1
+	and   cnvtdatetime(curdate,curtime3) between ea.beg_effective_dt_tm and ea.end_effective_dt_tm
+detail
+	t_rec->cons.encntr_id = ea.encntr_id
+	t_rec->cons.encntr_parser = build2("e.encntr_id = t_rec->cons.encntr_id")
+with nocounter
+
+if (t_rec->cons.encntr_id = 0)
+	set t_rec->cons.encntr_parser = build2("e.reg_dt_tm between cnvtdatetime(t_rec->dates.start_dt_tm)",
+									   " and cnvtdatetime(t_rec->dates.end_dt_tm)")
+endif
  
 call writeLog(build2("* END   Custom Section  ************************************"))
 call writeLog(build2("************************************************************"))
@@ -148,6 +173,7 @@ call writeLog(build2("* START Finding Diagnosis   ******************************
 select into "nl:"
 from
 	 diagnosis d
+	,encounter e
 	,nomenclature n
 	,dummyt d1
 	,dummyt d2
@@ -155,10 +181,11 @@ from
 	,cmt_cross_map ccm
 	,nomenclature n2
 	,nomenclature n3
-plan d
-	where d.updt_dt_tm between cnvtdatetime(t_rec->dates.start_dt_tm) and cnvtdatetime(t_rec->dates.end_dt_tm)
-	;where   d.person_id = 18866972.0
-	;where d.encntr_id = 125475063.0
+plan e
+	;where e.reg_dt_tm between cnvtdatetime(t_rec->dates.start_dt_tm) and cnvtdatetime(t_rec->dates.end_dt_tm)
+	where parser(t_rec->cons.encntr_parser)
+join d
+	where d.encntr_id = e.encntr_id
 	and   d.end_effective_dt_tm >= cnvtdatetime(sysdate)
 	and   d.active_ind = 1
 	and   d.contributor_system_cd = value(uar_get_code_by("MEANING",89,"POWERCHART"))
@@ -241,11 +268,11 @@ select into t_rec->cons.outdev
 	,fin=substring(1,50,t_rec->qual[d1.seq].fin)
 	,reg_dt_tm=substring(1,20,format(t_rec->qual[d1.seq].reg_dt_tm,"dd-mmm-yyyy hh:mm:ss;;d"))
 	,disch_dt_tm=substring(1,20,format(t_rec->qual[d1.seq].disch_dt_tm,"dd-mmm-yyyy hh:mm:ss;;d"))
-	,orig_code=substring(1,100,t_rec->qual[d1.seq].diag_qual[d2.seq].orig_identifier)
-	,orig_desc=substring(1,100,t_rec->qual[d1.seq].diag_qual[d2.seq].orig_source_string)
-	,nomen_code=substring(1,100,t_rec->qual[d1.seq].diag_qual[d2.seq].identifier)
-	,nomen_desc=substring(1,100,t_rec->qual[d1.seq].diag_qual[d2.seq].source_string)
-	,diag_desc=substring(1,100,t_rec->qual[d1.seq].diag_qual[d2.seq].diag_display)
+	,imo_code=substring(1,100,t_rec->qual[d1.seq].diag_qual[d2.seq].orig_identifier)
+	,imo_condition_name=substring(1,100,t_rec->qual[d1.seq].diag_qual[d2.seq].orig_source_string)
+	,icd10_code=substring(1,100,t_rec->qual[d1.seq].diag_qual[d2.seq].identifier)
+	,icd10_clinical_dx=substring(1,100,t_rec->qual[d1.seq].diag_qual[d2.seq].source_string)
+	,annotated_display=substring(1,100,t_rec->qual[d1.seq].diag_qual[d2.seq].diag_display)
 	,diag_dt_tm=substring(1,20,format(t_rec->qual[d1.seq].diag_qual[d2.seq].diag_dt_tm,"dd-mmm-yyyy hh:mm:ss;;d"))
 	,diag_priority=t_rec->qual[d1.seq].diag_qual[d2.seq].diag_priority
 	,provider=substring(1,100,t_rec->qual[d1.seq].diag_qual[d2.seq].responsible_provider)
