@@ -222,7 +222,29 @@ subroutine sGetUsername(vPersonID)
 	return (vReturnUsername)
 end
 
- 
+
+
+
+/**********************************************************************************************************************
+** Function add_eks_log_message(message)
+** ---------------------------------------------------------------------------------------
+** sets up and/or adds log message for use in EKS
+**********************************************************************************************************************/
+
+declare add_eks_log_message(vMessage = vc) = null 
+subroutine add_eks_log_message(vMessage)
+
+	if not(validate(eks_log))
+		record eks_log	(
+			1 log_message = vc
+		)
+	endif
+	set eks_log->log_message = concat(
+										trim(eks_log->log_message),";",
+										trim(vMessage)
+									)
+end ;add_log_message
+
 call echo(build2("finishing ",trim(cnvtlower(curprog))))
  
 end go
