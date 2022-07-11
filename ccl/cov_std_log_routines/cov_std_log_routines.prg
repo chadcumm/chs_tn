@@ -231,13 +231,15 @@ end
 ** sets up and/or adds log message for use in EKS
 **********************************************************************************************************************/
 
-declare add_eks_log_message(vMessage = vc) = null 
+declare add_eks_log_message(vMessage = vc) = null with copy, persist
 subroutine add_eks_log_message(vMessage)
 
-	if not(validate(eks_log))
+	if (not(validate(eks_log)))
+		
 		record eks_log	(
 			1 log_message = vc
-		)
+		) with persistscript
+		
 	endif
 	set eks_log->log_message = concat(
 										trim(eks_log->log_message),";",
